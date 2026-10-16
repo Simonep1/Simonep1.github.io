@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d17">
+  <meta name="description" content="Statistics homework — Simone Paris, student ID 2346573.">
+  <title>Simone Paris | Statistics</title>
+  <link rel="stylesheet" href="assets/styles.css">
+  <style>
+    .home-shell {
+      width: min(840px, calc(100% - 48px));
+      min-height: 100svh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .home-main { flex: 1; padding: clamp(85px, 15vh, 160px) 0 90px; }
+    .home-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--accent);
+      font-size: .76rem;
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+    .home-kicker::before { content: ''; width: 18px; height: 2px; background: currentColor; }
+    .home-title {
+      margin: 22px 0 7px;
+      color: var(--ink);
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      font-size: clamp(3.9rem, 11vw, 7rem);
+      font-weight: 700;
+      line-height: 1.05;
+      letter-spacing: -.075em;
+    }
+    .home-title .surname { color: var(--accent); }
+    .home-id { margin: 0; color: var(--muted); font-size: 1.02rem; letter-spacing: .01em; }
+    .home-divider { height: 1px; margin: 67px 0 30px; background: var(--line); }
+    .home-section-head { margin: 0 0 17px; color: #b6c7da; font-size: .8rem; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+    .home-links { display: grid; gap: 12px; }
+    .home-item {
+      display: flex;
+      align-items: center;
+      gap: 23px;
+      padding: 25px 27px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: linear-gradient(120deg, #141f30, #101927);
+      color: var(--ink);
+      text-decoration: none;
+      transition: border-color .2s ease, transform .2s ease, background .2s ease;
+    }
+    .home-item:hover { border-color: #70e4c7a8; transform: translateY(-2px); background: #18273a; }
+    .home-index { color: var(--accent); font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; font-weight: 700; }
+    .home-label { flex: 1; min-width: 0; }
+    .home-label strong { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; letter-spacing: -.025em; }
+    .home-label small { display: block; margin-top: 1px; color: var(--muted); font-size: .86rem; }
+    .home-arrow { color: var(--accent); font-size: 1.35rem; }
+    .home-footer { display: flex; justify-content: space-between; gap: 12px; padding: 22px 0 32px; border-top: 1px solid var(--line); color: #8293ac; font-size: .8rem; }
+    @media(max-width: 600px) {
+      .home-shell { width: min(100% - 36px, 840px); }
+      .home-main { padding: 94px 0 64px; }
+      .home-title { font-size: clamp(3.7rem, 13vw, 5rem); }
+      .home-divider { margin-top: 53px; }
+      .home-item { gap: 17px; padding: 21px 18px; }
+      .home-footer { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="home-shell">
+    <main class="home-main">
+      <span class="home-kicker">Statistics · 2026/27</span>
+      <h1 class="home-title">Simone <span class="surname">Paris.</span></h1>
+      <p class="home-id">Student ID · 2346573</p>
+
+      <div class="home-divider"></div>
+      <h2 class="home-section-head">Homeworks</h2>
+      <div class="home-links">
+        <a class="home-item" href="homework1/">
+          <span class="home-index">01</span>
+          <span class="home-label"><strong>Homework 1</strong><small>Elliptic-curve cryptography</small></span>
+          <span class="home-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="home-item" href="homework2/">
+          <span class="home-index">02</span>
+          <span class="home-label"><strong>Homework 2</strong><small>Ethereum wallet &amp; hashing</small></span>
+          <span class="home-arrow" aria-hidden="true">↗</span>
+        </a>
+        <a class="home-item" href="homework3/">
+          <span class="home-index">03</span>
+          <span class="home-label"><strong>Homework 3</strong><small>Encryption &amp; cryptanalysis</small></span>
+          <span class="home-arrow" aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </main>
+    <footer class="home-footer">
+      <span>Sapienza University of Rome</span>
+      <span>MSc Cybersecurity</span>
+    </footer>
+  </div>
+</body>
+</html>
