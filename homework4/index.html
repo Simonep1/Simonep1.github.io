@@ -1,1 +1,438 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d17">
+  <meta name="description" content="Statistics Homework 4 — stochastic penetration scores, Bernoulli and Rademacher models.">
+  <title>Homework 4 | Simone Paris</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; --bg: #080d17; --surface: #101927; --surface-2: #141f30; --line: #29384a; --text: #edf4fc; --muted: #94a6bc; --accent: #7ce9c9; --blue: #8bb9f0; --gold: #e9c58e; }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; line-height: 1.65; }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+    a { color: inherit; }
+    .shell { width: min(1100px, calc(100% - 48px)); margin: 0 auto; }
+    .topbar { min-height: 78px; display: flex; justify-content: space-between; align-items: center; gap: 20px; border-bottom: 1px solid var(--line); }
+    .back { color: #c6d5e8; text-decoration: none; font-size: .88rem; font-weight: 600; }
+    .back:hover { color: var(--accent); }
+    .top-tag { font-size: .75rem; color: var(--accent); text-transform: uppercase; letter-spacing: .14em; font-weight: 700; }
+    .hero { padding: 79px 0 58px; max-width: 810px; }
+    .eyebrow { font-size: .78rem; text-transform: uppercase; font-weight: 700; letter-spacing: .19em; color: var(--accent); }
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2, h3 { font-family: 'Space Grotesk', system-ui, sans-serif; line-height: 1.16; }
+    h1 { margin: 19px 0 22px; font-size: clamp(2.8rem, 7.2vw, 5.4rem); letter-spacing: -.065em; font-weight: 700; }
+    h1 span { color: var(--accent); }
+    .lead { margin: 0; max-width: 680px; color: #afc1d4; font-size: 1.08rem; }
+    .byline { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 30px; color: var(--muted); font-size: .84rem; }
+    .byline b { color: #d4e4f1; font-weight: 600; }
+    .intro, .section { border-top: 1px solid var(--line); padding: 40px 0 52px; }
+    .section-heading { display: flex; gap: 23px; align-items: baseline; margin-bottom: 15px; }
+    .index { color: var(--accent); font-family: 'Space Grotesk', sans-serif; font-size: .95rem; font-weight: 700; }
+    h2 { font-size: clamp(1.45rem, 3vw, 2rem); letter-spacing: -.04em; margin: 0; }
+    .section-copy { margin: 0 0 25px 39px; max-width: 875px; color: #b6c6d7; font-size: .94rem; }
+    .equations { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 24px 0 0 39px; }
+    .equation { background: linear-gradient(125deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); border-radius: 13px; padding: 21px 17px; min-width: 0; }
+    .equation .name { color: var(--muted); text-transform: uppercase; letter-spacing: .11em; font-size: .68rem; font-weight: 700; }
+    .equation .formula { margin: 9px 0 0; color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.12rem, 2vw, 1.45rem); font-weight: 600; white-space: nowrap; }
+    .equation .formula sub { font-size: 65%; }
+    .controls { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 15px; padding: 24px; margin: 8px 0 23px 39px; }
+    .control { display: flex; flex-direction: column; gap: 8px; min-width: 140px; }
+    .control label, .control .label { font-size: .76rem; font-weight: 700; color: #aebed1; }
+    .control select { width: 100%; padding: 10px 34px 10px 12px; min-height: 42px; background: #1c2a3c; color: #eef5ff; border: 1px solid #35475a; border-radius: 9px; }
+    .control select:focus-visible, .toggle button:focus-visible, .back:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+    .toggle { display: flex; padding: 3px; gap: 3px; border: 1px solid #35475a; background: #1c2a3c; border-radius: 10px; }
+    .toggle button { border: 0; color: #b9c9d9; background: transparent; border-radius: 7px; padding: 9px 15px; min-height: 36px; font-size: .86rem; }
+    .toggle button.active { color: #071811; background: var(--accent); font-weight: 700; }
+    .control-note { flex-basis: 100%; font-size: .8rem; color: #8fa5ba; line-height: 1.5; margin: 0; }
+    .chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-left: 39px; }
+    .hist-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-left: 39px; }
+    .panel { background: linear-gradient(135deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); border-radius: 14px; min-width: 0; padding: 21px 19px 16px; }
+    .panel h3 { margin: 0; font-size: 1.06rem; letter-spacing: -.025em; }
+    .panel .sub { margin: 5px 0 14px; font-size: .78rem; color: var(--muted); }
+    .chart-wrap { position: relative; height: 252px; }
+    .hist-grid .chart-wrap { height: 212px; }
+    canvas { display: block; width: 100%; height: 100%; }
+    .legend { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: .73rem; color: #aabbcd; margin-top: 12px; }
+    .legend span { display: flex; align-items: center; gap: 6px; }
+    .swatch { display: inline-block; width: 16px; height: 2px; background: var(--accent); border-radius: 2px; }
+    .swatch.dash { background: repeating-linear-gradient(90deg, var(--gold) 0 5px, transparent 5px 9px); }
+    .swatch.normal { background: var(--gold); }
+    .metric-row { display: flex; flex-wrap: wrap; gap: 14px; border-top: 1px solid #2a3a4c; margin-top: 13px; padding-top: 12px; font-size: .76rem; color: #adbed1; }
+    .metric-row strong { display: block; color: var(--text); font-weight: 700; font-size: .95rem; font-variant-numeric: tabular-nums; }
+    .table-wrap { overflow-x: auto; margin: 0 0 0 39px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+    table { border-collapse: collapse; width: 100%; font-size: .83rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    thead { background: #192638; }
+    th { padding: 17px 15px; text-align: right; color: #b6c9db; font-weight: 700; }
+    th:first-child, td:first-child { text-align: left; }
+    td { padding: 15px; border-top: 1px solid #2b3a4b; text-align: right; color: #d9e5f0; }
+    tr.selected td { background: #172c35; }
+    tbody tr:hover td { background: #1a293b; }
+    .table-description { margin: 17px 0 0 39px; color: #adbed0; font-size: .87rem; }
+    .findings { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; margin-left: 39px; }
+    .finding { border: 1px solid var(--line); border-radius: 13px; background: var(--surface); padding: 21px 23px; }
+    .finding h3 { color: var(--accent); font-size: 1rem; margin-bottom: 10px; }
+    .finding p { font-size: .88rem; color: #b9c8d9; margin: 0; }
+    .finding p + p { margin-top: 11px; }
+    .bottom { border-top: 1px solid var(--line); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 26px 0 38px; font-size: .8rem; color: #869aaf; }
+    @media (max-width: 910px) { .hist-grid { grid-template-columns: 1fr 1fr; } .hist-grid .panel:last-child { grid-column: 1 / -1; } .hist-grid .panel:last-child .chart-wrap { height: 240px; } }
+    @media (max-width: 680px) {
+      .shell { width: min(100% - 32px, 1100px); }
+      .topbar { min-height: 68px; }
+      .hero { padding: 58px 0 48px; }
+      .intro, .section { padding: 33px 0 42px; }
+      .section-copy, .equations, .controls, .chart-grid, .hist-grid, .table-wrap, .table-description, .findings { margin-left: 0; }
+      .equations { grid-template-columns: 1fr; gap: 10px; }
+      .equation { padding: 15px 17px; }
+      .controls { padding: 18px; gap: 14px; }
+      .control { flex: 1 1 140px; }
+      .control:first-child { flex-basis: 100%; }
+      .chart-grid, .hist-grid, .findings { grid-template-columns: 1fr; }
+      .hist-grid .panel:last-child { grid-column: auto; }
+      .section-heading { gap: 13px; }
+      .panel { padding: 18px 13px 13px; }
+      .chart-wrap { height: 220px; }
+      .hist-grid .chart-wrap, .hist-grid .panel:last-child .chart-wrap { height: 215px; }
+      .byline { gap: 3px 18px; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <nav class="topbar" aria-label="Site navigation">
+      <a class="back" href="../index.html">← Back to homeworks</a>
+      <span class="top-tag">Statistics / 04</span>
+    </nav>
+
+    <header class="hero">
+      <span class="eyebrow">Homework 04 · Probability</span>
+      <h1>Penetration scores<br><span>&amp; stochastic processes.</span></h1>
+      <p class="lead">A simulation of independent penetration scores across <em>n</em> systems and <em>m</em> attackers, comparing the Bernoulli and Rademacher models.</p>
+      <div class="byline"><span><b>Simone Paris</b></span><span>Student ID 2346573</span><span>Statistics · 2026/27</span></div>
+    </header>
+
+    <section class="intro" aria-labelledby="model-heading">
+      <div class="section-heading"><span class="index">00</span><h2 id="model-heading">Model and quantities</h2></div>
+      <p class="section-copy">Each attacker is simulated independently over <em>n</em> systems. At every step, the penetration score <em>X<sub>i</sub></em> is drawn independently from the same distribution. The Bernoulli model uses 1 for a successful penetration and 0 otherwise, with probability <em>p</em> of success. The Rademacher model assigns +1 or −1 with equal probability, giving a symmetric zero-mean score.</p>
+      <div class="equations">
+        <div class="equation"><div class="name">Total score</div><div class="formula">S<sub>n</sub> = Σ X<sub>i</sub></div></div>
+        <div class="equation"><div class="name">Average score</div><div class="formula">S<sub>n</sub> / n</div></div>
+        <div class="equation"><div class="name">Normalized total</div><div class="formula">S<sub>n</sub> / √n</div></div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="sim-heading">
+      <div class="section-heading"><span class="index">01</span><h2 id="sim-heading">Simulated trajectories</h2></div>
+      <p class="section-copy">Select a model, the number of systems and the number of attackers. The plots follow eight individual attackers; the distributions and numerical results use all <em>m</em> attackers.</p>
+      <div class="controls">
+        <div class="control"><span class="label">Score model</span><div class="toggle" role="group" aria-label="Score model"><button id="bernButton" type="button" class="active" aria-pressed="true">Bernoulli</button><button id="radButton" type="button" aria-pressed="false">Rademacher</button></div></div>
+        <div class="control"><label for="nSelect">Systems (n)</label><select id="nSelect"><option value="20">20</option><option value="100">100</option><option value="500" selected>500</option><option value="2000">2000</option></select></div>
+        <div class="control"><label for="mSelect">Attackers (m)</label><select id="mSelect"><option value="300">300</option><option value="1000" selected>1,000</option><option value="3000">3,000</option></select></div>
+        <div class="control" id="pField"><label for="pSelect">Penetration probability (p)</label><select id="pSelect"><option value="0.25">0.25</option><option value="0.4" selected>0.40</option><option value="0.6">0.60</option><option value="0.75">0.75</option></select></div>
+        <p class="control-note">Independent, identically distributed steps; new simulations are generated when the model, <em>m</em> or <em>p</em> changes.</p>
+      </div>
+      <div class="chart-grid">
+        <article class="panel"><h3>Cumulative score</h3><p class="sub">S<sub>k</sub> after k systems</p><div class="chart-wrap"><canvas id="pathsCanvas" role="img" aria-label="Sample cumulative penetration score trajectories"></canvas></div><div class="legend"><span><i class="swatch"></i> Sample attackers</span><span><i class="swatch dash"></i> Expected score</span></div></article>
+        <article class="panel"><h3>Running average</h3><p class="sub">S<sub>k</sub> / k after k systems</p><div class="chart-wrap"><canvas id="avgCanvas" role="img" aria-label="Sample running-average penetration score trajectories"></canvas></div><div class="legend"><span><i class="swatch"></i> Sample attackers</span><span><i class="swatch dash"></i> Expected average</span></div></article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="dist-heading">
+      <div class="section-heading"><span class="index">02</span><h2 id="dist-heading">Score distributions</h2></div>
+      <p class="section-copy">Histograms of the three quantities across <em>m</em> attackers at <strong id="currentN">n = 500</strong>. The heights represent probability density, so their total area is approximately 1.</p>
+      <div class="hist-grid">
+        <article class="panel"><h3>Total score</h3><p class="sub">S<sub>n</sub></p><div class="chart-wrap"><canvas id="totalHist" role="img" aria-label="Histogram of total scores"></canvas></div><div class="metric-row"><span>Sample mean<strong id="totalMean">—</strong></span><span>Sample variance<strong id="totalVar">—</strong></span></div></article>
+        <article class="panel"><h3>Average score</h3><p class="sub">S<sub>n</sub> / n</p><div class="chart-wrap"><canvas id="avgHist" role="img" aria-label="Histogram of average scores"></canvas></div><div class="metric-row"><span>Sample mean<strong id="avgMean">—</strong></span><span>Sample variance<strong id="avgVar">—</strong></span></div></article>
+        <article class="panel"><h3>Normalized total</h3><p class="sub">S<sub>n</sub> / √n</p><div class="chart-wrap"><canvas id="normHist" role="img" aria-label="Histogram of normalized total scores, compared with the standard normal in the Rademacher case"></canvas></div><div class="legend" id="normalLegend" hidden><span><i class="swatch"></i> Simulation</span><span><i class="swatch normal"></i> Standard normal N(0,1)</span></div><div class="metric-row"><span>Sample mean<strong id="normMean">—</strong></span><span>Sample variance<strong id="normVar">—</strong></span></div></article>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="compare-heading">
+      <div class="section-heading"><span class="index">03</span><h2 id="compare-heading">What changes as n grows?</h2></div>
+      <p class="section-copy">For each value of <em>n</em>, I calculate the sample mean and sample variances from the <em>m</em> simulated attackers. The last column estimates the probability that the average score differs from its expected value by more than 0.10.</p>
+      <div class="table-wrap"><table><thead><tr><th scope="col">n</th><th scope="col">Mean(S<sub>n</sub>/n)</th><th scope="col">Var(S<sub>n</sub>)</th><th scope="col">Var(S<sub>n</sub>/n)</th><th scope="col">Var(S<sub>n</sub>/√n)</th><th scope="col">P(|S<sub>n</sub>/n − μ| &gt; 0.10)</th></tr></thead><tbody id="resultsBody"></tbody></table></div>
+      <p class="table-description" id="theoryLine">—</p>
+    </section>
+
+    <section class="section" aria-labelledby="conclusion-heading">
+      <div class="section-heading"><span class="index">04</span><h2 id="conclusion-heading">Interpretation</h2></div>
+      <div class="findings">
+        <article class="finding"><h3>Law of Large Numbers</h3><p id="llnText"></p></article>
+        <article class="finding"><h3>Variance and Central Limit Theorem</h3><p id="cltText"></p></article>
+      </div>
+      <p class="table-description" id="attackersText"></p>
+    </section>
+
+    <footer class="bottom"><span>Statistics · Homework 04</span><span>Simone Paris · 2346573</span></footer>
+  </div>
+
+<script>
+(() => {
+  'use strict';
+  const steps = [20, 100, 500, 2000];
+  const pathsShown = 8;
+  const modelButtons = { bernoulli: document.getElementById('bernButton'), rademacher: document.getElementById('radButton') };
+  const nSelect = document.getElementById('nSelect');
+  const mSelect = document.getElementById('mSelect');
+  const pSelect = document.getElementById('pSelect');
+  let model = 'bernoulli';
+  let snapshots = {};
+  let trajectories = [];
+
+  // A fixed seed keeps each parameter choice reproducible.
+  function randomGenerator(seed) {
+    let value = seed >>> 0;
+    return function () {
+      value = (value + 0x6D2B79F5) | 0;
+      let t = Math.imul(value ^ (value >>> 15), 1 | value);
+      t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function simulate() {
+    const m = Number(mSelect.value);
+    const p = Number(pSelect.value);
+    const seed = 20261027 + m * 17 + Math.round(p * 1000) * 31 + (model === 'rademacher' ? 65537 : 0);
+    const rand = randomGenerator(seed);
+    snapshots = Object.fromEntries(steps.map(n => [n, new Float64Array(m)]));
+    trajectories = Array.from({ length: Math.min(pathsShown, m) }, () => new Float64Array(2001));
+
+    for (let attacker = 0; attacker < m; attacker++) {
+      let total = 0;
+      for (let k = 1; k <= 2000; k++) {
+        const u = rand();
+        total += model === 'bernoulli' ? (u < p ? 1 : 0) : (u < 0.5 ? 1 : -1);
+        if (attacker < pathsShown) trajectories[attacker][k] = total;
+        if (snapshots[k]) snapshots[k][attacker] = total;
+      }
+    }
+    drawAll();
+  }
+
+  function moments(data) {
+    const mean = data.reduce((acc, val) => acc + val, 0) / data.length;
+    const variance = data.length > 1 ? data.reduce((acc, val) => acc + (val - mean) ** 2, 0) / (data.length - 1) : 0;
+    return { mean, variance };
+  }
+  function format(value) {
+    if (Math.abs(value) < 0.00005) return '0.000';
+    if (Math.abs(value) < 0.01) return value.toFixed(5);
+    if (Math.abs(value) < 1) return value.toFixed(3);
+    if (Math.abs(value) < 1000) return value.toFixed(2);
+    return value.toFixed(0);
+  }
+  function compact(value) {
+    if (Math.abs(value) < 1e-10) return '0';
+    const a = Math.abs(value);
+    if (a >= 1000) return value.toFixed(0);
+    if (a >= 10) return value.toFixed(0);
+    if (a >= 1) return value.toFixed(1);
+    if (a >= 0.1) return value.toFixed(2);
+    if (a >= 0.01) return value.toFixed(3);
+    return value.toFixed(4);
+  }
+  function prepareCanvas(id) {
+    const canvas = document.getElementById(id);
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(100, rect.width);
+    const h = Math.max(100, rect.height);
+    const pixelRatio = Math.min(2, window.devicePixelRatio || 1);
+    canvas.width = Math.round(w * pixelRatio);
+    canvas.height = Math.round(h * pixelRatio);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    return { ctx, w, h };
+  }
+  function axes(ctx, w, h, box, xMin, xMax, yMin, yMax, xLabel, yLabels = true) {
+    const { left, right, top, bottom } = box;
+    const x = val => left + (val - xMin) / (xMax - xMin) * (w - left - right);
+    const y = val => top + (yMax - val) / (yMax - yMin) * (h - top - bottom);
+    ctx.font = '11px DM Sans, system-ui, sans-serif';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i <= 4; i++) {
+      const v = yMin + i * (yMax - yMin) / 4;
+      const py = y(v);
+      ctx.strokeStyle = '#304052'; ctx.lineWidth = .7;
+      ctx.beginPath(); ctx.moveTo(left, py); ctx.lineTo(w - right, py); ctx.stroke();
+      if (yLabels) { ctx.fillStyle = '#8fa6b9'; ctx.textAlign = 'right'; ctx.fillText(compact(v), left - 8, py); }
+    }
+    for (let i = 0; i <= 4; i++) {
+      const v = xMin + i * (xMax - xMin) / 4;
+      const px = x(v);
+      ctx.fillStyle = '#8fa6b9'; ctx.textAlign = 'center'; ctx.fillText(compact(v), px, h - bottom + 15);
+    }
+    if (xLabel) { ctx.textAlign = 'right'; ctx.fillStyle = '#8fa6b9'; ctx.fillText(xLabel, w - right, h - 2); }
+    return { x, y };
+  }
+
+  function drawPaths(canvasId, asAverage) {
+    const n = Number(nSelect.value);
+    const { ctx, w, h } = prepareCanvas(canvasId);
+    const box = { left: w < 390 ? 42 : 49, right: 11, top: 9, bottom: 38 };
+    const mu = model === 'bernoulli' ? Number(pSelect.value) : 0;
+    const values = [];
+    for (const path of trajectories) {
+      for (let k = 1; k <= n; k++) values.push(asAverage ? path[k] / k : path[k]);
+    }
+    values.push(asAverage ? mu : mu * n, 0);
+    let lo = Infinity, hi = -Infinity;
+    for (const v of values) { if (v < lo) lo = v; if (v > hi) hi = v; }
+    if (asAverage) {
+      if (model === 'bernoulli') { lo = Math.min(0, lo); hi = Math.max(1, hi); }
+      else { lo = Math.min(-1, lo); hi = Math.max(1, hi); }
+    }
+    let span = hi - lo;
+    if (span < 1e-10) span = 1;
+    lo -= span * .09; hi += span * .09;
+    const { x, y } = axes(ctx, w, h, box, 0, n, lo, hi, 'systems (k)');
+    ctx.save();
+    ctx.beginPath(); ctx.rect(box.left, box.top, w - box.left - box.right, h - box.top - box.bottom); ctx.clip();
+    const colors = ['#7ce9c9', '#8bb9f0', '#bd9eeb', '#edb7c6', '#a6dbdd', '#becb83', '#e0bb95', '#80bbd0'];
+    trajectories.forEach((path, idx) => {
+      ctx.beginPath(); ctx.strokeStyle = colors[idx]; ctx.globalAlpha = .78; ctx.lineWidth = 1.25;
+      for (let k = 1; k <= n; k++) {
+        const py = y(asAverage ? path[k] / k : path[k]);
+        if (k === 1) ctx.moveTo(x(k), py); else ctx.lineTo(x(k), py);
+      }
+      ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#e9c58e'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    if (asAverage) { ctx.moveTo(x(1), y(mu)); ctx.lineTo(x(n), y(mu)); }
+    else { ctx.moveTo(x(0), y(0)); ctx.lineTo(x(n), y(mu * n)); }
+    ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+  }
+
+  function drawHistogram(canvasId, raw, metric, n) {
+    const { ctx, w, h } = prepareCanvas(canvasId);
+    const box = { left: w < 400 ? 37 : 45, right: 10, top: 8, bottom: 37 };
+    const p = Number(pSelect.value);
+    const mu = model === 'bernoulli' ? p : 0;
+    const sigma2 = model === 'bernoulli' ? p * (1 - p) : 1;
+    const scale = metric === 'total' ? 1 : metric === 'average' ? 1 / n : 1 / Math.sqrt(n);
+    const values = Array.from(raw, s => s * scale);
+    const expectedMean = n * mu * scale;
+    const expectedStd = Math.sqrt(n * sigma2) * scale;
+    let min = Math.min(...values), max = Math.max(...values);
+    min = Math.min(min, expectedMean - 3.75 * expectedStd);
+    max = Math.max(max, expectedMean + 3.75 * expectedStd);
+    const extra = (max - min) * .025;
+    min -= extra; max += extra;
+    const bins = n <= 20 ? 21 : 34;
+    const width = (max - min) / bins;
+    const hist = Array(bins).fill(0);
+    values.forEach(v => hist[Math.max(0, Math.min(bins - 1, Math.floor((v - min) / width)))]++);
+    const density = hist.map(count => count / (values.length * width));
+    const showNormal = model === 'rademacher' && metric === 'normalized';
+    const normalPdf = z => Math.exp(-z * z / 2) / Math.sqrt(2 * Math.PI);
+    const high = Math.max(...density, showNormal ? normalPdf(0) : 0) * 1.17;
+    const { x, y } = axes(ctx, w, h, box, min, max, 0, high, 'score', true);
+    ctx.save();
+    ctx.beginPath(); ctx.rect(box.left, box.top, w - box.left - box.right, h - box.top - box.bottom); ctx.clip();
+    hist.forEach((count, i) => {
+      if (!count) return;
+      const x0 = x(min + i * width), x1 = x(min + (i + 1) * width);
+      const top = y(density[i]);
+      ctx.fillStyle = 'rgba(124,233,201,.72)';
+      ctx.fillRect(x0 + 1, top, Math.max(1, x1 - x0 - 1.5), y(0) - top);
+    });
+    if (showNormal) {
+      ctx.beginPath(); ctx.lineWidth = 2.1; ctx.strokeStyle = '#e9c58e';
+      for (let i = 0; i <= 240; i++) {
+        const z = min + i * (max - min) / 240;
+        if (i === 0) ctx.moveTo(x(z), y(normalPdf(z)));
+        else ctx.lineTo(x(z), y(normalPdf(z)));
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
+    const result = moments(values);
+    const prefix = metric === 'total' ? 'total' : metric === 'average' ? 'avg' : 'norm';
+    document.getElementById(prefix + 'Mean').textContent = format(result.mean);
+    document.getElementById(prefix + 'Var').textContent = format(result.variance);
+  }
+
+  function drawTable() {
+    const nChosen = Number(nSelect.value);
+    const mu = model === 'bernoulli' ? Number(pSelect.value) : 0;
+    const sigma2 = model === 'bernoulli' ? mu * (1 - mu) : 1;
+    const body = document.getElementById('resultsBody');
+    body.replaceChildren();
+    steps.forEach(n => {
+      const totals = snapshots[n];
+      const avg = Array.from(totals, s => s / n);
+      const totalStats = moments(totals);
+      const avgStats = moments(avg);
+      const normVariance = totalStats.variance / n;
+      const outside = avg.filter(v => Math.abs(v - mu) > 0.1 + 1e-12).length / avg.length;
+      const tr = document.createElement('tr');
+      if (n === nChosen) tr.className = 'selected';
+      [String(n), format(avgStats.mean), format(totalStats.variance), format(avgStats.variance), format(normVariance), (outside * 100).toFixed(1) + '%'].forEach(val => {
+        const td = document.createElement('td'); td.textContent = val; tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    });
+    const text = model === 'bernoulli'
+      ? `Theoretical values: μ = p = ${format(mu)}; Var(Sₙ) = n p(1−p), Var(Sₙ/n) = p(1−p)/n, Var(Sₙ/√n) = p(1−p) = ${format(sigma2)}.`
+      : 'Theoretical values: μ = 0; Var(Sₙ) = n, Var(Sₙ/n) = 1/n, Var(Sₙ/√n) = 1.';
+    document.getElementById('theoryLine').textContent = text;
+  }
+
+  function drawInterpretation() {
+    const m = Number(mSelect.value);
+    const p = Number(pSelect.value);
+    if (model === 'bernoulli') {
+      document.getElementById('llnText').textContent = `The average Sₙ/n tends to p = ${p.toFixed(2)} as n increases. Its variance is p(1−p)/n, so the averages concentrate around p. The last column of the table illustrates this convergence in probability.`;
+      document.getElementById('cltText').textContent = 'The total score grows roughly like np, and its variance grows linearly with n. Dividing by n makes the variance decrease to zero; dividing by √n keeps it at p(1−p). However, Sₙ/√n has mean p√n, so it does not converge to a standard normal distribution.';
+    } else {
+      document.getElementById('llnText').textContent = 'Since the Rademacher increments have mean 0, the average Sₙ/n approaches 0 as n increases. Its variance is 1/n, and large deviations from zero become less common.';
+      document.getElementById('cltText').textContent = 'The total score fluctuates around zero, with variance n. Dividing by n gives variance 1/n, while dividing by √n keeps variance equal to 1. As n grows, the distribution of Sₙ/√n approaches the standard normal N(0,1), as predicted by the Central Limit Theorem.';
+    }
+    document.getElementById('attackersText').textContent = `In this interpretation, n is the number of systems considered for each attacker, and m = ${m.toLocaleString('en-US')} is the number of independent attacker trajectories. Increasing n changes the aggregate score and its normalizations; increasing m provides a more stable empirical picture of their distributions, without changing the theoretical mean or variance.`;
+  }
+
+  function drawAll() {
+    const n = Number(nSelect.value);
+    const active = model === 'bernoulli';
+    modelButtons.bernoulli.classList.toggle('active', active);
+    modelButtons.rademacher.classList.toggle('active', !active);
+    modelButtons.bernoulli.setAttribute('aria-pressed', String(active));
+    modelButtons.rademacher.setAttribute('aria-pressed', String(!active));
+    document.getElementById('pField').hidden = !active;
+    document.getElementById('normalLegend').hidden = active;
+    document.getElementById('currentN').textContent = 'n = ' + n.toLocaleString('en-US');
+    drawPaths('pathsCanvas', false);
+    drawPaths('avgCanvas', true);
+    drawHistogram('totalHist', snapshots[n], 'total', n);
+    drawHistogram('avgHist', snapshots[n], 'average', n);
+    drawHistogram('normHist', snapshots[n], 'normalized', n);
+    drawTable();
+    drawInterpretation();
+  }
+
+  modelButtons.bernoulli.addEventListener('click', () => { if (model !== 'bernoulli') { model = 'bernoulli'; simulate(); } });
+  modelButtons.rademacher.addEventListener('click', () => { if (model !== 'rademacher') { model = 'rademacher'; simulate(); } });
+  nSelect.addEventListener('change', drawAll);
+  mSelect.addEventListener('change', simulate);
+  pSelect.addEventListener('change', simulate);
+  let scheduled = false;
+  window.addEventListener('resize', () => {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => { scheduled = false; drawAll(); });
+  });
+  simulate();
+})();
+</script>
+</body>
+</html>
 
