@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d17">
+  <meta name="description" content="Statistics Homework 5: Welford's recurrence formulas and sampling mean and variance.">
+  <title>Homework 5 | Simone Paris</title>
+  <style>
+    :root { color-scheme: dark; --bg:#080d17; --panel:#111b2a; --panel2:#152234; --ink:#e7f0f8; --muted:#93a7bd; --accent:#70e4c7; --line:#29384a; --purple:#b8b0ff; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { max-width:980px; margin:0 auto; padding:36px 26px 88px; }
+    a { color:var(--accent); }
+    .back { display:inline-block; color:var(--accent); text-decoration:none; font-size:.88rem; }
+    .back:hover { text-decoration:underline; }
+    .kicker { margin-top:65px; color:var(--accent); font-size:.76rem; font-weight:750; letter-spacing:.14em; text-transform:uppercase; }
+    h1,h2,h3 { font-family:"Space Grotesk",system-ui,sans-serif; line-height:1.2; }
+    h1 { margin:16px 0; font-size:clamp(2.7rem,7vw,5.1rem); letter-spacing:-.065em; }
+    h2 { margin:67px 0 20px; padding-top:21px; border-top:1px solid var(--line); font-size:1.8rem; letter-spacing:-.035em; }
+    h3 { margin:29px 0 10px; font-size:1.18rem; letter-spacing:-.015em; }
+    p { color:#c2d1df; margin:12px 0; }
+    header > p { max-width:730px; }
+    .small { color:var(--muted); font-size:.89rem; }
+    .tag { display:inline-block; color:var(--accent); font-size:.76rem; font-weight:750; letter-spacing:.085em; text-transform:uppercase; }
+    .card { margin:22px 0; padding:25px; background:var(--panel); border:1px solid var(--line); border-radius:14px; }
+    .formula { margin:15px 0; padding:15px 19px; background:var(--panel); border-left:3px solid var(--accent); border-radius:6px; color:var(--ink); overflow-x:auto; }
+    .formula .line { display:block; margin:5px 0; white-space:normal; }
+    .math { font-family:Cambria,"STIX Two Math","Times New Roman",serif; font-size:1.14rem; letter-spacing:.01em; }
+    .math sub, .math sup { font-size:.65em; }
+    .subtle { color:var(--muted); }
+    code,pre { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    :not(pre) > code { color:#b4f6e6; overflow-wrap:anywhere; }
+    pre { margin:13px 0 0; background:#08121f; padding:19px; border:1px solid var(--line); border-radius:10px; font-size:.85rem; line-height:1.65; overflow-x:auto; }
+    pre code { color:#deebf7; }
+    .two-col { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+    .controls { display:grid; grid-template-columns:1fr 1fr auto; gap:15px; align-items:end; }
+    label { display:block; margin:0 0 7px; color:#c4d6e6; font-weight:650; font-size:.87rem; }
+    input { width:100%; min-width:0; padding:10px 13px; border:1px solid #394a60; border-radius:8px; background:#091320; color:var(--ink); font:inherit; }
+    input:focus-visible,button:focus-visible,a:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
+    button { padding:11px 19px; border:0; border-radius:8px; background:var(--accent); color:#06251d; font:inherit; font-weight:750; cursor:pointer; transition:filter .15s; }
+    button:hover { filter:brightness(1.08); }
+    .secondary { border:1px solid #40546c; background:var(--panel2); color:var(--ink); }
+    .status { margin-top:13px; font-size:.88rem; color:var(--muted); }
+    .error { color:#ffb1b1; }
+    .results { display:grid; grid-template-columns:repeat(4,1fr); gap:11px; margin:22px 0; }
+    .stat { padding:17px 16px; background:#0b1625; border:1px solid var(--line); border-radius:11px; }
+    .stat .name { min-height:44px; display:block; color:var(--muted); font-size:.79rem; line-height:1.4; }
+    .stat .value { display:block; margin:8px 0 1px; color:var(--ink); font-family:"Space Grotesk",system-ui,sans-serif; font-size:clamp(1.4rem,2.7vw,1.9rem); font-weight:750; letter-spacing:-.04em; font-variant-numeric:tabular-nums; }
+    .stat .target { color:var(--accent); font-size:.8rem; }
+    .panel-title { margin:0 0 7px; font-weight:700; font-size:1rem; }
+    .legend { display:flex; gap:17px; flex-wrap:wrap; margin:10px 0; color:var(--muted); font-size:.81rem; }
+    .legend span { display:inline-flex; align-items:center; gap:7px; }
+    .swatch { width:19px; height:3px; background:var(--accent); border-radius:8px; }
+    .swatch.purple { background:var(--purple); }
+    .swatch.blue { background:#77aaff; }
+    .chart { display:block; width:100%; height:auto; margin-top:10px; }
+    .chart text { font:12px system-ui,sans-serif; fill:var(--muted); }
+    .chart .grid { stroke:#314154; stroke-width:1; }
+    .chart .axis { stroke:#607083; stroke-width:1; }
+    .chart .line { fill:none; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:.92rem; font-variant-numeric:tabular-nums; }
+    th,td { padding:13px 11px; border-bottom:1px solid var(--line); text-align:left; white-space:nowrap; }
+    th { color:var(--muted); font-size:.78rem; font-weight:650; }
+    td { color:#d3e0eb; }
+    .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:17px; }
+    .note { padding-left:16px; border-left:2px solid var(--line); color:#c2d1df; }
+    .section-gap { margin-top:28px; }
+    footer { margin-top:70px; padding-top:22px; border-top:1px solid var(--line); color:var(--muted); font-size:.82rem; }
+    @media (max-width:750px) {
+      .results { grid-template-columns:repeat(2,1fr); }
+      .controls { grid-template-columns:1fr 1fr; }
+      .controls button { grid-column:1/-1; }
+      .compare-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:550px) {
+      main { padding:25px 18px 65px; }
+      .kicker { margin-top:49px; }
+      h2 { margin-top:50px; font-size:1.5rem; }
+      .card { padding:17px; }
+      .two-col { grid-template-columns:1fr; }
+      .controls { grid-template-columns:1fr; }
+      .controls button { grid-column:auto; }
+      .results { gap:9px; }
+      .stat { padding:13px 12px; }
+      .stat .name { min-height:55px; }
+      pre { padding:13px; font-size:.76rem; }
+      th,td { padding:10px 9px; }
+      .formula { padding:13px; }
+    }
+  </style>
+</head>
+<body>
+<main>
+  <a href="../" class="back">← Back to home</a>
+  <header>
+    <div class="kicker">Statistics · Homework 05</div>
+    <h1>Welford &amp; sampling<span style="color:var(--accent)">.</span></h1>
+    <p>Deriving the online mean and variance updates, then testing them on simulated penetration scores.</p>
+    <p class="small">Simone Paris · Student ID 2346573</p>
+  </header>
+
+  <section id="exercise-1">
+    <h2>01 — Welford's recurrence formulas</h2>
+    <p>Suppose that <span class="math">x<sub>1</sub>, …, x<sub>n</sub></span> are the observations. We want to update the mean and the sum of squared deviations whenever a new observation arrives, without going through the previous data again.</p>
+    <p>Knuth's recurrence for the mean is:</p>
+    <div class="formula math">
+      <span class="line">δ<sub>n</sub> = x<sub>n</sub> − x̄<sub>n−1</sub></span>
+      <span class="line">x̄<sub>n</sub> = x̄<sub>n−1</sub> + δ<sub>n</sub> / n</span>
+    </div>
+
+    <h3>Recurrence for the sum of squares (SS)</h3>
+    <p>Define <span class="math">SS<sub>n</sub> = ∑<sub>i=1</sub><sup>n</sup> (x<sub>i</sub> − x̄<sub>n</sub>)²</span>. Since the previous deviations from their mean sum to zero, expanding the squares gives:</p>
+    <div class="formula math">
+      <span class="line">SS<sub>n</sub> = SS<sub>n−1</sub> + (n−1)(x̄<sub>n</sub> − x̄<sub>n−1</sub>)² + (x<sub>n</sub> − x̄<sub>n</sub>)²</span>
+      <span class="line">= SS<sub>n−1</sub> + [(n−1)/n] δ<sub>n</sub>²</span>
+      <span class="line"><strong>= SS<sub>n−1</sub> + δ<sub>n</sub>(x<sub>n</sub> − x̄<sub>n</sub>)</strong></span>
+    </div>
+    <p>The last step follows from <span class="math">x<sub>n</sub> − x̄<sub>n</sub> = [(n−1)/n]δ<sub>n</sub></span>. Initially, <span class="math">x̄<sub>0</sub> = 0</span> and <span class="math">SS<sub>0</sub> = 0</span>.</p>
+
+    <h3>Recurrence for the sampling variance</h3>
+    <p>The sampling (unbiased) variance is <span class="math">s<sub>n</sub>² = SS<sub>n</sub> / (n−1)</span>, for <span class="math">n ≥ 2</span>. Substituting the recurrence for SS:</p>
+    <div class="formula math">
+      <span class="line">s<sub>n</sub>² = [(n−2)/(n−1)] s<sub>n−1</sub>² + δ<sub>n</sub>² / n &nbsp; (n ≥ 3)</span>
+    </div>
+    <p>For <span class="math">n = 2</span>, we directly use <span class="math">s<sub>2</sub>² = SS<sub>2</sub></span>. The sampling variance is undefined for a single observation.</p>
+
+    <h3>JavaScript implementation</h3>
+    <p>The update itself consists of three lines. At each step <code>count</code> is the number of observations processed, including the new one.</p>
+    <div class="card">
+      <span class="tag">Welford update</span>
+      <pre><code>function welford(scores) {
+  let mean = 0, SS = 0;
+  for (let i = 0; i &lt; scores.length; i++) {
+    const count = i + 1;
+    const delta = scores[i] - mean;
+    mean += delta / count;
+    SS += delta * (scores[i] - mean);
+  }
+  return {
+    mean,
+    variance: scores.length &gt; 1 ? SS / (scores.length - 1) : null
+  };
+}</code></pre>
+      <p class="small">Only the mean, SS and the observation count need to be stored. The sampling variance is obtained from SS at the end.</p>
+    </div>
+  </section>
+
+  <section id="exercise-2">
+    <h2>02 — Sampling mean and variance</h2>
+    <h3>Distribution and theoretical values</h3>
+    <p>As an extension of Homework 4, each of the <span class="math">m</span> hackers attempts <span class="math">n</span> systems. Every attempt receives an independent integer score between 0 and 10. I use a <strong>discrete uniform distribution</strong>: all 11 scores are equally likely.</p>
+    <div class="formula math">
+      <span class="line">P(X = k) = 1/11, &nbsp; k ∈ {0, 1, …, 10}</span>
+      <span class="line">μ = E[X] = (0 + 1 + ⋯ + 10)/11 = <strong>5</strong></span>
+      <span class="line">E[X²] = (0² + 1² + ⋯ + 10²)/11 = 35</span>
+      <span class="line">σ² = E[X²] − μ² = 35 − 25 = <strong>10</strong></span>
+    </div>
+    <p>For each hacker, the <span class="math">n</span> scores form a trajectory. Welford's update gives that hacker's sampling mean <span class="math">x̄<sub>j</sub></span> and sampling variance <span class="math">s<sub>j</sub>²</span>. Across the <span class="math">m</span> hackers, we calculate:</p>
+    <div class="formula math">
+      <span class="line">Average sampling mean = (1/m) ∑<sub>j=1</sub><sup>m</sup> x̄<sub>j</sub> &nbsp; → &nbsp; μ = 5</span>
+      <span class="line">Average sampling variance = (1/m) ∑<sub>j=1</sub><sup>m</sup> s<sub>j</sub>² &nbsp; → &nbsp; σ² = 10</span>
+    </div>
+
+    <h3>Simulation</h3>
+    <div class="card">
+      <span class="tag">Run the experiment</span>
+      <p class="small">Change the number of hackers or systems to repeat the simulation. The score distribution stays the same.</p>
+      <div class="controls">
+        <div><label for="mInput">Hackers (m)</label><input id="mInput" type="number" min="2" max="10000" step="1" value="1000"></div>
+        <div><label for="nInput">Systems per hacker (n)</label><input id="nInput" type="number" min="2" max="2000" step="1" value="50"></div>
+        <button id="runBtn" type="button">Run simulation</button>
+      </div>
+      <div id="singleStatus" class="status" role="status" aria-live="polite"></div>
+      <div class="results" aria-live="polite">
+        <div class="stat"><span class="name">Average sampling mean</span><strong id="avgMean" class="value">—</strong><span class="target">Theoretical μ = 5</span></div>
+        <div class="stat"><span class="name">Average sampling variance</span><strong id="avgVar" class="value">—</strong><span class="target">Theoretical σ² = 10</span></div>
+        <div class="stat"><span class="name">SD of sampling means</span><strong id="sdMean" class="value">—</strong><span class="target">Across hackers</span></div>
+        <div class="stat"><span class="name">SD of sampling variances</span><strong id="sdVar" class="value">—</strong><span class="target">Across hackers</span></div>
+      </div>
+      <p class="small">The two standard deviations describe the variability of the sampling statistics <em>between hackers</em>; they are not the population standard deviation of individual penetration scores.</p>
+      <div class="section-gap">
+        <p class="panel-title">Example score trajectories</p>
+        <p class="small">Scores of the first three hackers, across their <span id="trajectoryN">n</span> system attempts.</p>
+        <div class="legend"><span><i class="swatch"></i> Hacker 1</span><span><i class="swatch purple"></i> Hacker 2</span><span><i class="swatch blue"></i> Hacker 3</span></div>
+        <svg id="trajectoryChart" class="chart" viewBox="0 0 720 250" role="img" aria-label="Three hackers' scores at each system attempt"></svg>
+      </div>
+    </div>
+
+    <h3>Effect of increasing n</h3>
+    <p>Now I keep the same number of hackers and repeat the experiment with <span class="math">n = 5, 20, 100, 500</span> systems per hacker. For each <span class="math">n</span>, the table shows the averages and the standard deviations of the sampling means and sampling variances across hackers.</p>
+    <div class="card">
+      <button id="compareBtn" class="secondary" type="button">Run increasing-n comparison</button>
+      <div id="compareStatus" class="status" role="status" aria-live="polite"></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Systems (n)</th><th>Avg. means</th><th>Avg. variances</th><th>SD(means)</th><th>SD(variances)</th></tr></thead>
+          <tbody id="compareBody"><tr><td colspan="5" class="subtle">Run the comparison to view the results.</td></tr></tbody>
+        </table>
+      </div>
+      <div class="compare-grid">
+        <div><p class="panel-title">Variability of sampling means</p><svg id="meanTrend" class="chart" viewBox="0 0 360 220" role="img" aria-label="Standard deviation of the sampling means as n increases"></svg></div>
+        <div><p class="panel-title">Variability of sampling variances</p><svg id="varTrend" class="chart" viewBox="0 0 360 220" role="img" aria-label="Standard deviation of the sampling variances as n increases"></svg></div>
+      </div>
+    </div>
+
+    <h3>Conclusions</h3>
+    <p>The average sampling mean is close to <span class="math">μ = 5</span>, while the average sampling variance is close to <span class="math">σ² = 10</span>. The results are not exactly equal because only a finite number of hackers is simulated. Both the sample mean and the usual sampling variance with denominator <span class="math">n − 1</span> are unbiased estimators.</p>
+    <p>As <span class="math">n</span> increases, the sampling means and variances generally vary less from one hacker to another. For the mean, <span class="math">Var(x̄) = σ²/n = 10/n</span>, so its standard deviation decreases as <span class="math">1/√n</span>. The sampling variance also becomes more stable when more observations are available.</p>
+    <p>These properties are useful in <strong>inferential statistics</strong> because we use sample statistics to estimate unknown population parameters. Larger samples normally produce more precise estimates, with less sampling uncertainty.</p>
+  </section>
+  <footer>Simone Paris · 2346573 · Statistics 2026/27</footer>
+</main>
+<script>
+"use strict";
+
+// X is discrete uniform on {0, 1, ..., 10}.
+function drawScore() {
+  return Math.floor(Math.random() * 11);
+}
+
+function sampleHacker(n, keepScores) {
+  let mean = 0;
+  let SS = 0;
+  const scores = keepScores ? [] : null;
+  for (let count = 1; count <= n; count++) {
+    const score = drawScore();
+    const delta = score - mean;
+    mean += delta / count;
+    SS += delta * (score - mean);
+    if (scores) scores.push(score);
+  }
+  return { mean, variance: SS / (n - 1), scores };
+}
+
+// The same online update also computes the average and spread across hackers.
+function acrossHackers(m, n, saveTrajectories) {
+  let meanOfMeans = 0, SSMeans = 0;
+  let meanOfVariances = 0, SSVariances = 0;
+  const trajectories = [];
+  for (let count = 1; count <= m; count++) {
+    const hacker = sampleHacker(n, saveTrajectories && count <= 3);
+    if (hacker.scores) trajectories.push(hacker.scores);
+
+    const dMean = hacker.mean - meanOfMeans;
+    meanOfMeans += dMean / count;
+    SSMeans += dMean * (hacker.mean - meanOfMeans);
+
+    const dVariance = hacker.variance - meanOfVariances;
+    meanOfVariances += dVariance / count;
+    SSVariances += dVariance * (hacker.variance - meanOfVariances);
+  }
+  return {
+    avgMean: meanOfMeans,
+    avgVar: meanOfVariances,
+    sdMean: Math.sqrt(SSMeans / (m - 1)),
+    sdVar: Math.sqrt(SSVariances / (m - 1)),
+    trajectories
+  };
+}
+
+function fmt(value) { return value.toFixed(4); }
+function getParameters() {
+  const m = Number(document.getElementById("mInput").value);
+  const n = Number(document.getElementById("nInput").value);
+  if (!Number.isInteger(m) || m < 2 || m > 10000) throw new Error("Choose an integer m between 2 and 10,000.");
+  if (!Number.isInteger(n) || n < 2 || n > 2000) throw new Error("Choose an integer n between 2 and 2,000.");
+  return { m, n };
+}
+
+function svgElement(type, attributes = {}, parent) {
+  const elem = document.createElementNS("http://www.w3.org/2000/svg", type);
+  for (const [key, value] of Object.entries(attributes)) elem.setAttribute(key, value);
+  if (parent) parent.appendChild(elem);
+  return elem;
+}
+function svgText(svg, x, y, value, attributes = {}) {
+  const el = svgElement("text", { x, y, ...attributes }, svg);
+  el.textContent = String(value);
+  return el;
+}
+
+function drawTrajectories(series, n) {
+  const svg = document.getElementById("trajectoryChart");
+  svg.replaceChildren();
+  const left = 45, right = 700, top = 13, bottom = 212;
+  const x = i => left + (n === 1 ? 0 : i / (n - 1)) * (right - left);
+  const y = score => bottom - (score / 10) * (bottom - top);
+  for (let tick = 0; tick <= 10; tick += 2) {
+    const yy = y(tick);
+    svgElement("line", { x1:left, y1:yy, x2:right, y2:yy, class:"grid" }, svg);
+    svgText(svg, left-11, yy+4, tick, {"text-anchor":"end"});
+  }
+  svgElement("line", { x1:left, y1:top, x2:left, y2:bottom, class:"axis" }, svg);
+  svgElement("line", { x1:left, y1:bottom, x2:right, y2:bottom, class:"axis" }, svg);
+  const nTicks = Math.min(6, n);
+  for (let t = 0; t < nTicks; t++) {
+    const i = Math.round(t * (n - 1) / (nTicks - 1));
+    svgText(svg, x(i), bottom+20, i+1, {"text-anchor":"middle"});
+  }
+  svgText(svg, (left+right)/2, 248, "System attempt", {"text-anchor":"middle"});
+  svgText(svg, 14, (top+bottom)/2, "Score", {"text-anchor":"middle",transform:`rotate(-90 14 ${(top+bottom)/2})`});
+  ["#70e4c7", "#b8b0ff", "#77aaff"].forEach((color, j) => {
+    if (!series[j]) return;
+    const points = series[j].map((score, i) => `${x(i).toFixed(2)},${y(score).toFixed(2)}`).join(" ");
+    svgElement("polyline", { points, class:"line", stroke:color, opacity:".9" }, svg);
+    if (n <= 20) series[j].forEach((score, i) => svgElement("circle", { cx:x(i), cy:y(score), r:3.2, fill:color }, svg));
+  });
+}
+
+function drawTrend(id, data, key, color) {
+  const svg = document.getElementById(id);
+  svg.replaceChildren();
+  if (!data.length) return;
+  const left = 46, right = 341, top = 14, bottom = 178;
+  const maxValue = Math.max(...data.map(row => row[key]));
+  const topValue = Math.max(maxValue * 1.12, 0.001);
+  const x = i => left + (i/(data.length-1)) * (right-left);
+  const y = v => bottom - v/topValue * (bottom-top);
+  for (let i = 0; i <= 4; i++) {
+    const value = topValue*i/4, yy = y(value);
+    svgElement("line", {x1:left, y1:yy, x2:right, y2:yy, class:"grid"}, svg);
+    svgText(svg, left-9, yy+4, value.toFixed(2), {"text-anchor":"end"});
+  }
+  svgElement("line", {x1:left, y1:bottom, x2:right, y2:bottom, class:"axis"}, svg);
+  data.forEach((row,i) => svgText(svg,x(i),bottom+20,row.n,{"text-anchor":"middle"}));
+  svgText(svg,(left+right)/2,216,"Number of systems (n)",{"text-anchor":"middle"});
+  svgElement("polyline",{points:data.map((row,i)=>`${x(i)},${y(row[key])}`).join(" "),class:"line",stroke:color},svg);
+  data.forEach((row,i)=>svgElement("circle",{cx:x(i),cy:y(row[key]),r:4,fill:color},svg));
+}
+
+function runSingle() {
+  const status = document.getElementById("singleStatus");
+  try {
+    const {m,n} = getParameters();
+    const result = acrossHackers(m,n,true);
+    document.getElementById("avgMean").textContent = fmt(result.avgMean);
+    document.getElementById("avgVar").textContent = fmt(result.avgVar);
+    document.getElementById("sdMean").textContent = fmt(result.sdMean);
+    document.getElementById("sdVar").textContent = fmt(result.sdVar);
+    document.getElementById("trajectoryN").textContent = n;
+    drawTrajectories(result.trajectories,n);
+    status.classList.remove("error");
+    status.textContent = `Simulation completed: ${m.toLocaleString("en-US")} hackers × ${n.toLocaleString("en-US")} systems.`;
+  } catch(e) {
+    status.classList.add("error");
+    status.textContent = e.message;
+  }
+}
+
+function runComparison() {
+  const status = document.getElementById("compareStatus");
+  try {
+    const {m} = getParameters();
+    const systems = [5,20,100,500];
+    const results = systems.map(n => ({n, ...acrossHackers(m,n,false)}));
+    const tbody = document.getElementById("compareBody");
+    tbody.replaceChildren();
+    results.forEach(result => {
+      const tr = document.createElement("tr");
+      [result.n, fmt(result.avgMean), fmt(result.avgVar), fmt(result.sdMean), fmt(result.sdVar)].forEach(value => {
+        const td = document.createElement("td"); td.textContent = value; tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    drawTrend("meanTrend", results, "sdMean", "#70e4c7");
+    drawTrend("varTrend", results, "sdVar", "#b8b0ff");
+    status.classList.remove("error");
+    status.textContent = `Independent simulations with ${m.toLocaleString("en-US")} hackers for each n. Values change slightly between runs.`;
+  } catch(e) {
+    status.classList.add("error");
+    status.textContent = e.message;
+  }
+}
+
+document.getElementById("runBtn").addEventListener("click",runSingle);
+document.getElementById("compareBtn").addEventListener("click",runComparison);
+runSingle();
+runComparison();
+</script>
+</body>
+</html>
