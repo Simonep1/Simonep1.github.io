@@ -4,177 +4,72 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#080d17">
-  <meta name="description" content="Statistics homework 6: Riemann and Lebesgue integration and numerical computation of the normal CDF.">
-  <title>Homework 06 — Numerical Integration & Normal CDF | Simone Paris</title>
+  <title>Homework 6 | Simone Paris</title>
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
 </head>
 <body>
-  <div class="page">
-    <nav class="site-nav" aria-label="Page navigation">
-      <a href="../" class="back-link">← All homeworks</a>
-      <div class="nav-links"><a href="#exercise-1">Exercise 1</a><a href="#exercise-2">Exercise 2</a><a href="#references">References</a></div>
-    </nav>
+<main class="page">
+  <nav><a href="../">← Back to homeworks</a></nav>
+  <header>
+    <p class="eyebrow">Statistics · Homework 6</p>
+    <h1>Numerical Integration and Normal CDF</h1>
+    <p class="subtitle">Simone Paris · Student ID 2346573</p>
+  </header>
 
-    <header class="intro">
-      <div class="kicker">Statistics / Homework 06</div>
-      <h1>Two ways to integrate.<br><span>One probability curve.</span></h1>
-      <p class="intro-text">The first exercise compares what happens when we divide the <em>domain</em> of a function and when we divide its <em>values</em>. The second looks at the normal CDF: a familiar probability function with a surprisingly difficult numerical side.</p>
-      <div class="meta"><span>Simone Paris</span><span>Student ID 2346573</span><span>November 2026</span></div>
-    </header>
+  <section>
+    <h2>Exercise 1 — Riemann and Lebesgue integration</h2>
+    <p>In this exercise I compare two ways of approximating an integral. Riemann sums divide the domain into intervals, while Lebesgue integration groups points according to the values of the function.</p>
+    <div class="formulas"><div><strong>Riemann (midpoint rule)</strong><div class="formula">R<sub>N</sub> = Δx Σ f(a + (i + ½)Δx)</div><p>Here Δx = (b − a)/N.</p></div><div><strong>Lebesgue (value levels)</strong><div class="formula">∫f = ∫<sub>0</sub><sup>∞</sup> μ({x : f(x) &gt; t}) dt</div><p>For nonnegative functions, I approximate the second integral using K levels of the range.</p></div></div>
+    <p>For the Lebesgue calculation I use the known length of each superlevel set <em>m(t) = μ({x : f(x) &gt; t})</em>. This is important: simply sampling the domain and sorting the results would not compute the preimage measures exactly. For example, for f(x) = x², m(t) = 1 − √t for 0 ≤ t ≤ 1.</p>
+    <div class="lab">
+      <h3>Numerical experiment</h3>
+      <div class="controls"><label>Function<select id="function"><option value="sin">sin(x), [0, π]</option><option value="square">x², [0, 1]</option><option value="step13">Step function (1 and 3)</option><option value="abs">|x − 0.5|, [0, 1]</option><option value="inverse">1/√x, (0, 1]</option><option value="step10">Step function (1 and 0)</option><option value="sinc">sin(x)/x, [0, π]</option><option value="dirichlet">Dirichlet function</option><option value="thomae">Thomae's function</option></select></label><label>Partitions N = K<select id="resolution"><option>16</option><option>32</option><option>64</option><option selected>128</option><option>256</option><option>512</option><option>1024</option></select></label><button id="run-integration">Calculate</button></div>
+      <div class="results"><div><small>Exact value</small><strong id="exact">—</strong></div><div><small>Riemann</small><strong id="riemann">—</strong></div><div><small>Lebesgue</small><strong id="lebesgue">—</strong></div></div>
+      <p class="note" id="integration-note"></p>
+      <div class="chart-wrap"><canvas id="function-chart" width="820" height="260" aria-label="Graph of selected function"></canvas></div>
+      <h3>Convergence</h3>
+      <p>The table shows the absolute errors when the number of partitions increases. Smaller errors mean better numerical accuracy.</p>
+      <div class="table-scroll"><table><thead><tr><th>N = K</th><th>Riemann estimate</th><th>Riemann error</th><th>Lebesgue estimate</th><th>Lebesgue error</th></tr></thead><tbody id="integration-table"></tbody></table></div>
+    </div>
+    <h3>Observations</h3>
+    <p>For the continuous functions, both approaches tend to the same integral. The midpoint Riemann rule is often more accurate with the same number of partitions. The Lebesgue approach can be slower if finding the measure of the preimage is difficult.</p>
+    <p>The step functions are still Riemann-integrable, even though they have a jump. The function 1/√x is unbounded near zero: its improper integral is 2. In the numerical Lebesgue method I cut the range at a finite height and add the remaining tail using the known formula for its measure.</p>
+    <p>Dirichlet's function is different. It equals 1 on rational numbers and 0 on irrational numbers. It has no Riemann integral, since every interval contains both types of numbers, but its Lebesgue integral is 0 because the rationals have measure zero. Thomae's function is Riemann-integrable and Lebesgue-integrable, with integral 0. Although it is discontinuous at every rational point, it is continuous at every irrational point.</p>
+    <p class="note">For Dirichlet and Thomae, the program uses exact rational grid points for the Riemann sums. Testing whether a JavaScript decimal number is rational would be misleading.</p>
+  </section>
 
-    <main>
-      <section class="section" id="exercise-1">
-        <div class="section-head"><span class="section-index">01</span><div><div class="section-label">Exercise one</div><h2>Riemann vs. Lebesgue integration</h2></div></div>
-        <p>I used several functions whose integrals are known, so that the numerical approximations can be checked instead of only compared to one another. The selection includes smooth curves, jumps, an unbounded function and two pathological examples.</p>
-
-        <div class="two-columns theory-grid">
-          <article class="theory-card">
-            <span class="mini-label">Partition the x-axis</span>
-            <h3>Riemann approach</h3>
-            <p>Divide <strong>[a,b]</strong> into <strong>N</strong> equal intervals of width Δx and take one value in each interval. For the main experiment I use midpoint tags.</p>
-            <div class="formula">R<sub>N</sub> = Δx · Σ<sub>i=0…N−1</sub> f(a + (i + ½)Δx)</div>
-            <p class="small muted">For smooth functions midpoint sums are usually second-order accurate. This does not hold automatically at discontinuities or singularities.</p>
-          </article>
-          <article class="theory-card">
-            <span class="mini-label">Partition the y-axis</span>
-            <h3>Lebesgue approach</h3>
-            <p>Group domain points by their function values. Each group contributes its value multiplied by the <strong>measure of its preimage</strong>.</p>
-            <div class="formula">L ≈ Σ<sub>j</sub> y<sub>j</sub> · μ({x : f(x) ∈ B<sub>j</sub>})</div>
-            <p class="small muted">For nonnegative functions I calculate the measure of superlevel sets, m(t) = μ({x : f(x) &gt; t}).</p>
-          </article>
-        </div>
-
-        <h3>How I implemented the range partition</h3>
-        <p>For a nonnegative function the layer-cake identity gives ∫f(x)dx = ∫<sub>0</sub><sup>∞</sup> m(t)dt. For a bounded function with maximum height H, use the levels y<sub>j</sub> = jH/K, with δ = H/K. Since m(t) is decreasing, the following are genuine lower and upper bounds when m(t) is known:</p>
-        <div class="formula wide">L<sub>low</sub> = δ Σ<sub>j=1…K</sub> m(jδ) &nbsp;≤&nbsp; ∫f &nbsp;≤&nbsp; δ Σ<sub>j=0…K−1</sub> m(jδ) = L<sub>up</sub></div>
-        <p>The displayed Lebesgue estimate is the midpoint of these bounds. For the ordinary functions, the measure <em>m(t)</em> is found algebraically; for sin(x)/x it is obtained by bisection. I also include a <strong>sampled range-binning estimate</strong>, using randomised stratified probes to estimate the measures. That sampled variant is only an approximation inspired by Lebesgue integration: its accuracy depends on the domain samples and it cannot correctly recognise rational versus irrational real numbers.</p>
-        <p class="detail">Special case: for 1/√x the range is unbounded. I truncate the levels at H = √K and add the analytically known tail ∫<sub>H</sub><sup>∞</sup> m(t)dt = 1/H. This is an explicit correction, not something a generic numerical method would know without additional information.</p>
-
-        <div class="interactive" id="integral-lab">
-          <div class="interactive-head"><div><div class="section-label">Numerical experiment</div><h3>Try the integration methods</h3></div><span class="live-label"><span class="dot"></span> Computed in browser</span></div>
-          <form class="controls" id="integral-form">
-            <label class="input-group wide-field">Function<select id="function-select">
-              <option value="sin">sin(x) on [0, π]</option>
-              <option value="square">x² on [0, 1]</option>
-              <option value="step13">1 / 3 step function</option>
-              <option value="abs">|x − 0.5| on [0, 1]</option>
-              <option value="inverse">1/√x on (0, 1]</option>
-              <option value="step10">1 / 0 step function</option>
-              <option value="sinc">sin(x)/x on [0, π]</option>
-              <option value="dirichlet">Dirichlet function</option>
-              <option value="thomae">Thomae's function</option>
-            </select></label>
-            <label class="input-group">Domain intervals (N)<select id="n-select"><option>32</option><option>64</option><option>128</option><option selected>256</option><option>512</option><option>1024</option><option>2048</option></select></label>
-            <label class="input-group">Value levels (K)<select id="k-select"><option>32</option><option>64</option><option>128</option><option selected>256</option><option>512</option><option>1024</option><option>2048</option></select></label>
-            <label class="input-group">Range probes (M)<select id="m-select"><option>1024</option><option selected>4096</option><option>8192</option><option>16384</option></select></label>
-            <button type="submit" class="primary">Run experiment</button>
-          </form>
-          <div class="stat-grid four">
-            <div class="stat"><div class="stat-title">Exact integral</div><div id="int-exact" class="stat-value">—</div></div>
-            <div class="stat"><div class="stat-title">Riemann midpoint</div><div id="int-riemann" class="stat-value">—</div><div id="int-r-error" class="stat-foot">—</div></div>
-            <div class="stat"><div class="stat-title">Lebesgue levels</div><div id="int-lebesgue" class="stat-value">—</div><div id="int-l-error" class="stat-foot">—</div></div>
-            <div class="stat"><div class="stat-title">Sampled range bins</div><div id="int-sampled" class="stat-value">—</div><div id="int-s-error" class="stat-foot">—</div></div>
-          </div>
-          <p class="result-note" id="function-note" aria-live="polite"></p>
-          <div class="two-columns chart-grid">
-            <div class="chart-panel"><h4>Domain: midpoint rectangles</h4><canvas id="function-chart" height="250" aria-label="Graph of the function and Riemann rectangles" role="img"></canvas><p class="chart-caption">Small illustrative grid (not all N rectangles).</p></div>
-            <div class="chart-panel"><h4>Range: measure of {x : f(x) &gt; t}</h4><canvas id="measure-chart" height="250" aria-label="Superlevel-set measure versus threshold" role="img"></canvas><p class="chart-caption">The area under m(t) equals the integral.</p></div>
-          </div>
-          <div class="method-strip" id="int-method-strip"></div>
-        </div>
-
-        <h3>Accuracy and convergence</h3>
-        <p>The next comparison recomputes each selected function at increasingly fine resolutions. It shows absolute error against the exact integral, not just the difference between two approximations. Each range partition uses K = N levels; the sampled estimate uses M = 8N probes, with a fixed seed for reproducibility. Exactly zero errors are omitted from the logarithmic plot but remain visible in the table.</p>
-        <div class="chart-panel tall"><div class="chart-title-row"><h4>Absolute error vs. resolution (log scale)</h4><span class="muted small">N = K</span></div><canvas id="convergence-chart" height="275" aria-label="Convergence comparison chart" role="img"></canvas><div class="legend"><span><i class="leg-mint"></i>Riemann midpoint</span><span><i class="leg-violet"></i>Lebesgue mid-level</span><span><i class="leg-orange"></i>Sampled levels</span></div></div>
-        <div class="table-wrap"><table><thead><tr><th>N / K</th><th>Riemann</th><th>R |error|</th><th>Lebesgue</th><th>L |error|</th><th>Sampled |error|</th></tr></thead><tbody id="convergence-body"></tbody></table></div>
-        <p class="detail" id="convergence-note"></p>
-
-        <h3>Same resolution, all nine functions</h3>
-        <p>This overview uses N = K = 256 for the midpoint and the measure-based range sum. For the pathologies, a number from a particular sampling grid must <em>not</em> be mistaken for a Riemann integral.</p>
-        <div class="table-wrap"><table><thead><tr><th>Function</th><th>Exact integral</th><th>Riemann midpoint</th><th>Lebesgue levels</th><th>R |error|</th><th>L |error|</th></tr></thead><tbody id="all-functions-body"></tbody></table></div>
-
-        <h3>Why the pathological examples matter</h3>
-        <div class="two-columns">
-          <article class="note-card"><span class="mini-label">Not Riemann-integrable</span><h4>Dirichlet function</h4><p>It equals 1 on rational numbers and 0 on irrational numbers. Every interval contains both: all lower Darboux sums are 0, all upper ones are 1. Midpoints of a rational grid give 1, while irrational tags give 0. Both are possible sampled sums; neither is a Riemann integral. Since rationals have measure zero, the Lebesgue integral is exactly <strong>0</strong>.</p></article>
-          <article class="note-card"><span class="mini-label">Riemann-integrable after all</span><h4>Thomae's function</h4><p>At a reduced rational p/q its value is 1/q; at irrational numbers it is 0. The discontinuity set is the rationals, which have measure zero. It is therefore Riemann-integrable by Lebesgue's criterion, with integral <strong>0</strong>. Rational grid samples can still give a positive answer at finite N, but those values decrease as the partition is refined.</p></article>
-        </div>
-        <div class="two-columns">
-          <article class="note-card"><span class="mini-label">Improper but integrable</span><h4>1/√x</h4><p>The function is unbounded near x = 0 and is not Riemann-integrable in the ordinary bounded-function sense on [0,1]. Its improper Riemann integral and its Lebesgue integral both equal <strong>2</strong>. Ordinary left-endpoint evaluation fails at 0; midpoint sums converge slowly, and range levels require a tail treatment.</p></article>
-          <article class="note-card"><span class="mini-label">Single discontinuity</span><h4>Step functions</h4><p>A jump at x = ½ does not prevent Riemann integrability. Both methods converge to the same area. If an even partition happens to align perfectly with the jump, a midpoint sum can already be exact, but that is a property of the chosen grid, not a general guarantee.</p></article>
-        </div>
-        <p><strong>Conclusion for exercise 1.</strong> On the bounded Riemann-integrable functions, both constructions approach the same integral. For smooth functions the midpoint rule usually gives more accuracy per function evaluation; the range-based construction is valuable when measures of level sets are accessible, and it still works for measurable functions that have no Riemann integral. Counting function evaluations alone is not enough to compare costs: obtaining a preimage measure may itself be difficult.</p>
-      </section>
-
-      <section class="section" id="exercise-2">
-        <div class="section-head"><span class="section-index">02</span><div><div class="section-label">Exercise two</div><h2>Computing the standard normal CDF</h2></div></div>
-        <p>For a standard normal variable Z, the CDF Φ(z) is the probability P(Z ≤ z). The density is symmetric about zero, so it is enough to integrate from 0 to |z|, provided we are careful when subtracting probabilities close to ½.</p>
-        <div class="formula wide">φ(z) = exp(−z²/2)/√(2π) &nbsp;&nbsp; Φ(z) = ∫<sub>−∞</sub><sup>z</sup> φ(t)dt = ½[1 + erf(z/√2)] = ½ erfc(−z/√2)</div>
-
-        <h3>Why there is no elementary antiderivative</h3>
-        <p>The Gaussian integral exists, but the indefinite integral of exp(−x²/2) cannot be written as a finite combination of elementary functions. This is a consequence of <strong>Liouville's theorem on elementary antiderivatives</strong> (not the similarly named theorem from complex analysis).</p>
-        <div class="proof"><div class="proof-tag">Short argument</div><p>For an integrand of the form exp(g(x)) with polynomial g, the relevant consequence of Liouville's theorem says that an elementary primitive would require a rational function r(x) satisfying <strong>r′(x) + g′(x)r(x) = 1</strong>. Here g(x) = −x²/2, so the equation becomes:</p><div class="formula">r′(x) − xr(x) = 1</div><p>A rational solution cannot have a finite pole: at a pole of order m, r′ has a pole of order m+1, which −xr cannot cancel. Therefore r would have to be a polynomial. But if r is a nonzero polynomial of degree d, the left side has degree d+1, so it cannot equal the constant 1; the zero polynomial also fails. Thus no rational r exists, ruling out an elementary antiderivative.</p></div>
-        <p>The <strong>error function</strong> is defined by erf(u) = (2/√π)∫<sub>0</sub><sup>u</sup> exp(−t²)dt. It gives Φ an exact expression, but the answer still needs a numerical algorithm to produce decimal values. Equivalently, using erfc is especially useful for small tail probabilities because it avoids subtracting two nearly equal floating-point numbers.</p>
-
-        <h3>Methods implemented</h3>
-        <div class="method-list">
-          <div><span class="method-id">A</span><div><strong>Composite trapezoidal rule</strong><p>Apply the trapezoid rule to ∫<sub>0</sub><sup>z</sup> φ(t)dt, then add ½. Expected error O(N<sup>−2</sup>).</p></div></div>
-          <div><span class="method-id">B</span><div><strong>Composite Simpson's rule</strong><p>The same integral with Simpson weights 1–4–2–…–4–1. N must be even; for smooth integrands the error is O(N<sup>−4</sup>).</p></div></div>
-          <div><span class="method-id">C</span><div><strong>Power series of erf</strong><p>Use erf(u) = (2/√π)Σ<sub>k≥0</sub>(−1)<sup>k</sup>u<sup>2k+1</sup>/(k!(2k+1)). Fast near the centre, but the alternating terms lead to cancellation for large |z|.</p></div></div>
-          <div><span class="method-id">D</span><div><strong>Positive-term series + tail continued fraction</strong><p>For |z| &lt; 2, use Φ(z) = ½ + φ(z)Σ<sub>k≥0</sub>z<sup>2k+1</sup>/(2k+1)!!. For |z| ≥ 2, compute the smaller tail directly from a continued fraction and use symmetry. This is my main practical method.</p></div></div>
-          <div><span class="method-id">E</span><div><strong>erf polynomial approximation</strong><p>Use the classic five-coefficient approximation in Abramowitz &amp; Stegun, formula 7.1.26. It is very fast, but has a fixed approximation error.</p></div></div>
-        </div>
-        <div class="formula wide small-formula">For a = |z| ≥ 2: &nbsp; Φ(−a) ≈ φ(a) / [ a + 1/(a + 2/(a + 3/(a + …))) ]</div>
-        <p class="detail">Important: a formula that computes a tiny left-tail probability as ½ minus an integral, or as 1 − Φ(a), can lose almost all significant digits. The continued fraction instead computes the small tail directly. Near zero, the power series is more effective.</p>
-
-        <div class="interactive" id="cdf-lab">
-          <div class="interactive-head"><div><div class="section-label">Numerical experiment</div><h3>Evaluate Φ(z)</h3></div><span class="live-label"><span class="dot"></span> Actual algorithm output</span></div>
-          <form id="cdf-form" class="controls cdf-controls">
-            <label class="input-group">z value<input id="z-input" type="number" step="0.01" min="-10" max="10" value="1.96" required></label>
-            <label class="input-group">Quadrature intervals<select id="cdf-n"><option>16</option><option>32</option><option>64</option><option>128</option><option>256</option><option selected>512</option><option>1024</option><option>2048</option></select></label>
-            <button type="submit" class="primary">Compute CDF</button>
-          </form>
-          <div class="stat-grid three">
-            <div class="stat"><div class="stat-title">Reference Φ(z)</div><div id="cdf-reference" class="stat-value">—</div></div>
-            <div class="stat"><div class="stat-title">Simpson</div><div id="cdf-simpson" class="stat-value">—</div><div id="cdf-simpson-error" class="stat-foot">—</div></div>
-            <div class="stat"><div class="stat-title">Hybrid (series / fraction)</div><div id="cdf-hybrid" class="stat-value">—</div><div id="cdf-hybrid-error" class="stat-foot">—</div></div>
-          </div>
-          <div class="chart-panel"><h4>Standard normal density and accumulated probability</h4><canvas id="normal-chart" height="265" aria-label="Normal density curve with the area to the left of z shaded" role="img"></canvas><p class="chart-caption" id="cdf-chart-caption">Shaded area represents P(Z ≤ z).</p></div>
-          <div class="table-wrap"><table><thead><tr><th>Method</th><th>Φ(z)</th><th>Abs. error</th><th>Relative error</th></tr></thead><tbody id="cdf-live-table"></tbody></table></div>
-        </div>
-
-        <h3>Comparison with reference values</h3>
-        <p>The reference values below were computed with high-precision arithmetic and checked against the published NIST normal table at its available decimal precision. They are embedded as fixed data: the experimental implementations do not calculate their own reference values. Values in the far tails are particularly informative when comparing numerical methods.</p>
-        <div class="table-wrap"><table><thead><tr><th>z</th><th>Reference Φ(z)</th><th>Trapezoid |error|</th><th>Simpson |error|</th><th>Hybrid |error|</th><th>erf approx. |error|</th></tr></thead><tbody id="cdf-reference-body"></tbody></table></div>
-        <p class="small muted">Quadrature uses 512 subintervals in this table. Errors are absolute; relative errors are also available in the live experiment. In the far left tail, even a tiny absolute error can mean a very large relative error.</p>
-
-        <h3>Convergence and computational cost</h3>
-        <p>Here the integration interval is fixed at z = 1.96. Only the number of quadrature intervals changes; the normal PDF is evaluated N+1 times. The series and continued fraction have a cost determined by their required terms rather than by N.</p>
-        <div class="chart-panel tall"><h4>Quadrature absolute error at z = 1.96</h4><canvas id="cdf-convergence-chart" height="255" aria-label="Trapezoidal and Simpson convergence chart" role="img"></canvas><div class="legend"><span><i class="leg-violet"></i>Trapezoid</span><span><i class="leg-mint"></i>Simpson</span></div></div>
-        <div class="table-wrap"><table><thead><tr><th>Intervals N</th><th>Trapezoid |error|</th><th>Simpson |error|</th><th>PDF evaluations</th></tr></thead><tbody id="cdf-convergence-body"></tbody></table></div>
-        <p>Theoretical orders are 2 for trapezoid and 4 for Simpson. Once errors approach the precision of JavaScript's 64-bit floating-point numbers, increasing N may stop helping. A highly accurate series or tail formula often reaches a useful precision with much less work than integrating hundreds of subintervals.</p>
-        <div class="benchmark-header"><div><h4>Browser timing experiment</h4><p class="small muted">Repeated calculations; times depend on the device and browser, so operation counts are more reproducible.</p></div><button type="button" id="benchmark-button" class="secondary">Run benchmark</button></div>
-        <div class="table-wrap"><table><thead><tr><th>Method</th><th>Measured time / call</th><th>Work per call</th></tr></thead><tbody id="benchmark-body"><tr><td colspan="3" class="muted">Run the benchmark to measure this browser.</td></tr></tbody></table></div>
-        <p><strong>Conclusion for exercise 2.</strong> Simpson's rule is a reliable way to evaluate Φ in the central region, and its accuracy improves quickly as the grid is refined. A series works well near zero. In the tails, however, precision is not just about using more terms: the form of the calculation matters. Directly evaluating the small complementary probability avoids subtractive cancellation and preserves much better relative accuracy.</p>
-      </section>
-
-      <section class="section references" id="references">
-        <div class="section-head"><span class="section-index">03</span><div><div class="section-label">Notes</div><h2>Sources and reproducibility</h2></div></div>
-        <p>Everything on this page runs locally in plain JavaScript, with no external charting libraries or server calls. The displayed computations are performed when the page loads or when an input changes. For repeatability, the sampled range experiment uses a deterministic pseudo-random generator with a fixed seed. Timings are intentionally measured on the reader's machine rather than reported as universal performance numbers.</p>
-        <ol class="source-list">
-          <li><a href="https://www.itl.nist.gov/div898/handbook/eda/section3/eda3671.htm" target="_blank" rel="noopener noreferrer">NIST/SEMATECH, Standard Normal CDF table</a> — external check of the tabulated probabilities.</li>
-          <li><a href="https://dlmf.nist.gov/7.2" target="_blank" rel="noopener noreferrer">NIST Digital Library of Mathematical Functions, §7.2</a> — definitions of erf and erfc.</li>
-          <li><a href="https://dlmf.nist.gov/7.20" target="_blank" rel="noopener noreferrer">NIST DLMF, §7.20</a> — normal CDF and complementary error function.</li>
-          <li><a href="https://faculty.etsu.edu/gardnerr/4047/notes-Hogg-McKean-Craig/Hogg-McKean-Craig-3-4.pdf" target="_blank" rel="noopener noreferrer">Hogg, McKean &amp; Craig, Section 3.4 lecture notes</a> — normal density, symmetry and Gaussian normalisation (assignment reading).</li>
-          <li><a href="https://dlmf.nist.gov/7.6" target="_blank" rel="noopener noreferrer">NIST DLMF, §7.6</a> — series expansions of error functions.</li>
-          <li><a href="https://math.stanford.edu/~conrad/papers/elemint.pdf" target="_blank" rel="noopener noreferrer">Brian Conrad, Impossibility Theorems for Elementary Integration</a> — Liouville’s theorem and the Gaussian integral.</li>
-          <li><a href="https://en.wikipedia.org/wiki/Abramowitz_and_Stegun" target="_blank" rel="noopener noreferrer">Abramowitz &amp; Stegun, Handbook of Mathematical Functions</a>, §7.1.26 — five-coefficient erf approximation.</li>
-        </ol>
-        <p class="small muted">Implementation note: Dirichlet and Thomae are handled with exact rational-tag reasoning; checking whether a JavaScript floating-point value is a rational real number would give a misleading demonstration. Values of sin(x)/x at zero are defined by continuity.</p>
-      </section>
-    </main>
-    <footer><span>Simone Paris · 2346573</span><span>Statistics · Homework 06</span><a href="#top" id="to-top">Back to top ↑</a></footer>
-  </div>
+  <section>
+    <h2>Exercise 2 — Numerical computation of the normal CDF</h2>
+    <p>For a standard normal variable Z, the cumulative distribution function is the probability that Z ≤ z:</p>
+    <div class="formula center">Φ(z) = (1/√(2π)) ∫<sub>−∞</sub><sup>z</sup> e<sup>−t²/2</sup> dt</div>
+    <p>The Gaussian function does not have an elementary antiderivative. Liouville's theorem gives a way to establish this: in this case, an elementary antiderivative would require a rational function r satisfying r′(x) − xr(x) = 1. Such a rational function does not exist (a pole cannot cancel, and a polynomial gives the wrong degree).</p>
+    <p>We can still write an exact expression using the <strong>error function</strong>:</p>
+    <div class="formula center">erf(u) = (2/√π) ∫<sub>0</sub><sup>u</sup> e<sup>−t²</sup> dt &nbsp;&nbsp; Φ(z) = ½[1 + erf(z/√2)]</div>
+    <p>However, to obtain a decimal value, erf must also be evaluated numerically. I implemented three methods:</p>
+    <ol><li><strong>Trapezoidal rule:</strong> numerical integration between 0 and z, using symmetry.</li><li><strong>Simpson's rule:</strong> a more accurate integration rule for smooth functions.</li><li><strong>Power series:</strong> expansion of erf around zero. It works well near zero, but loses precision for large negative z because of cancellation.</li></ol>
+    <div class="lab">
+      <h3>Calculate Φ(z)</h3>
+      <div class="controls"><label>Value z<input id="z" type="number" min="-5" max="5" step="0.1" value="1.96"></label><label>Intervals (even)<select id="cdf-n"><option>20</option><option>50</option><option selected>100</option><option>200</option><option>500</option><option>1000</option></select></label><button id="run-cdf">Calculate</button></div>
+      <div class="results"><div><small>Reference</small><strong id="cdf-ref">—</strong></div><div><small>Simpson</small><strong id="cdf-simpson">—</strong></div><div><small>Series</small><strong id="cdf-series">—</strong></div></div>
+      <div class="chart-wrap"><canvas id="normal-chart" width="820" height="260" aria-label="Normal density graph"></canvas></div>
+      <div class="table-scroll"><table><thead><tr><th>Method</th><th>Computed Φ(z)</th><th>Absolute error</th></tr></thead><tbody id="cdf-live"></tbody></table></div>
+    </div>
+    <h3>Comparison with reference values</h3>
+    <p>The following values can be checked against published standard normal tables. The calculations use 100 intervals for numerical integration. In the interactive calculator, values not listed in the table are checked against a more accurate internal numerical approximation.</p>
+    <div class="table-scroll"><table><thead><tr><th>z</th><th>Reference</th><th>Trapezoidal error</th><th>Simpson error</th><th>Series error</th></tr></thead><tbody id="cdf-table"></tbody></table></div>
+    <h3>Accuracy and efficiency</h3>
+    <p>Trapezoidal and Simpson integration need N + 1 evaluations of the normal density. Their theoretical errors decrease respectively as 1/N² and 1/N⁴ for a fixed integration interval. The series generally needs fewer operations near zero. The table below shows how the two integration methods improve when N increases, using z = 1.96.</p>
+    <div class="table-scroll"><table><thead><tr><th>N</th><th>Trapezoidal error</th><th>Simpson error</th><th>Density evaluations</th></tr></thead><tbody id="cdf-convergence"></tbody></table></div>
+    <p>For large negative values, a small absolute error may still be a large relative error. This is a limitation of computing Φ(z) as ½ plus or minus an integral. For very small tail probabilities, a dedicated <em>erfc</em> or tail approximation would be preferable.</p>
+  </section>
+  <section>
+    <h2>Conclusion</h2>
+    <p>The two definitions of integration agree on Riemann-integrable functions, but they approach the calculation differently. The examples of Dirichlet and Thomae show why the Lebesgue definition is more general. For the normal CDF, Simpson's rule gives good accuracy without too many intervals, while the series is useful near zero. The best method depends on the function and on the precision we need.</p>
+    <h3>References</h3>
+    <ul class="refs"><li><a href="https://faculty.etsu.edu/gardnerr/4047/notes-Hogg-McKean-Craig/Hogg-McKean-Craig-3-4.pdf">Hogg, McKean & Craig — The Normal Distribution (course reference)</a></li><li><a href="https://www.itl.nist.gov/div898/handbook/eda/section3/eda3671.htm">NIST — Standard Normal Distribution Table</a></li><li><a href="https://dlmf.nist.gov/7.2">NIST DLMF — Error Functions</a></li><li><a href="https://math.stanford.edu/~conrad/papers/elemint.pdf">B. Conrad — Elementary Integration and Liouville's Theorem</a></li></ul>
+  </section>
+  <footer>Simone Paris · Statistics 2026/27</footer>
+</main>
 </body>
 </html>
-
