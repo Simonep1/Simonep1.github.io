@@ -25,13 +25,20 @@
     th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
     th { background: var(--panel); color: var(--accent); font-weight: 600; }
     td { color: var(--ink); }
-    tr:last-child td { border-bottom: 0; }
+    tr:last-child td { border-bottom: 0; font-weight: 600; }
     .formula { margin: 14px 0; padding: 12px 16px; border-left: 3px solid var(--accent); color: var(--ink); background: var(--panel); }
     details { margin: 18px 0; border: 1px solid var(--line); border-radius: 10px; }
     summary { padding: 12px 16px; cursor: pointer; color: var(--accent); }
     pre { margin: 0; padding: 0 16px 16px; color: #d1ddeb; font-size: .85rem; line-height: 1.55; overflow: auto; max-height: 240px; }
     .result { margin-top: 20px; padding: 17px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
     .result p { margin: 4px 0; }
+    .controls { display:flex; flex-wrap:wrap; align-items:center; gap:11px; margin: 21px 0 8px; }
+    label { color: var(--ink); font-size:.92rem; }
+    button, select { padding: 10px 14px; border:1px solid var(--line); border-radius:8px; background:var(--panel); color:var(--ink); font: inherit; font-size:.9rem; }
+    button { cursor:pointer; }
+    button.primary { background:var(--accent); color:#0b1925; font-weight:700; border-color:var(--accent); }
+    button:hover { border-color:var(--accent); }
+    button:focus-visible, select:focus-visible { outline:2px solid var(--accent); outline-offset:3px; }
     footer { margin-top: 65px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
     @media (max-width: 620px) { main { padding-top: 32px; } .tables { grid-template-columns: 1fr; gap: 0; } th,td { padding: 10px; } }
   </style>
@@ -41,166 +48,534 @@
     <a class="back" href="../">← Back to home</a>
     <p class="eyebrow">Statistics · Homework 7</p>
     <h1>Statistical Independence</h1>
-    <p class="muted">A simple example using two categorical variables and Pearson's chi-square test.</p>
+    <p class="muted">Contingency tables, conditional frequencies and Pearson's chi-square test.</p>
 
-    <h2>1. What does independence mean?</h2>
-    <p>In probability, two variables X and F are independent if the joint probability is the product of the marginal probabilities for every pair of values:</p>
+    <h2>1. Independence</h2>
+    <p>In probability, X and F are independent if their joint probability equals the product of their marginal probabilities for every pair of values.</p>
     <div class="formula">P(X = x, F = f) = P(X = x) · P(F = f)</div>
-    <p>This is equivalent to P(F = f | X = x) = P(F = f), whenever P(X = x) &gt; 0. Knowing X does not change the distribution of F.</p>
-    <p>In statistics, we estimate these probabilities from data. Even if two variables are independent in the population, the sample frequencies will not usually match exactly. The chi-square test checks whether the observed differences are large enough to question independence.</p>
+    <p>Equivalently, P(F = f | X = x) = P(F = f), whenever P(X = x) &gt; 0.</p>
+    <p>In statistics, independence is checked using a finite sample. Even if the variables are independent in the population, sample frequencies may differ because of chance. We use the chi-square test to evaluate these differences.</p>
 
     <h2>2. Dataset and contingency table</h2>
-    <p>I used 40 simulated connection checks. X is the connection type (Wi-Fi or Ethernet), while F is the result (Stable or Interrupted). These are example observations, not measurements from a real network.</p>
-    <p>The contingency table is built by counting how often each pair (X, F) occurs.</p>
+    <p>I used the <a href="https://allisonhorst.github.io/palmerpenguins/" target="_blank" rel="noopener noreferrer">Palmer Penguins dataset</a>. It contains observations of 344 penguins from the Palmer Archipelago. Here, X is the penguin species and F is the island where it was observed.</p>
+    <p>Both variables are categorical. The table is generated from the observation pairs (X, F), not entered manually.</p>
+    <div class="controls">
+      <label for="sample-size">Sample size</label>
+      <select id="sample-size">
+        <option value="200">200</option>
+        <option value="250" selected>250</option>
+        <option value="300">300</option>
+        <option value="344">344 (full dataset)</option>
+      </select>
+      <button class="primary" id="shuffle" type="button">Shuffle sample</button>
+      <button id="reset" type="button">Reset dataset</button>
+    </div>
+    <p class="muted" id="sample-info" role="status" aria-live="polite"></p>
+    <p class="muted">Shuffle sample takes a random subset of real observations without replacement. The (X, F) pairs stay together. Changing only the row order of the full dataset would not change the results.</p>
     <details>
-      <summary>Show the 40 observations (X, F)</summary>
+      <summary>Show current observations (CSV)</summary>
       <pre id="raw-data"></pre>
     </details>
     <div class="table-wrap"><table id="observed"></table></div>
 
     <h2>3. Marginal and conditional frequencies</h2>
-    <p>Marginal relative frequencies are calculated by dividing row or column totals by the total number of observations, n = 40.</p>
+    <p>Marginal relative frequencies are obtained by dividing the totals of each row or column by the number of observations, n.</p>
     <div class="tables">
       <div><h3>Marginal frequencies of X</h3><div class="table-wrap"><table id="marginal-x"></table></div></div>
       <div><h3>Marginal frequencies of F</h3><div class="table-wrap"><table id="marginal-f"></table></div></div>
     </div>
-    <p>Conditional frequencies describe the distribution of one variable when the value of the other is known.</p>
+    <p>Conditional frequencies are computed within a given category of the other variable.</p>
     <div class="tables">
       <div><h3>F given X (row percentages)</h3><div class="table-wrap"><table id="given-x"></table></div></div>
       <div><h3>X given F (column percentages)</h3><div class="table-wrap"><table id="given-f"></table></div></div>
     </div>
     <p id="conditional-example"></p>
     <h3>Joint relative frequencies</h3>
-    <p>Each entry is the count divided by n, with the marginal frequencies in the last row and column.</p>
+    <p>Each cell is divided by n. The last row and column give the marginal relative frequencies.</p>
     <div class="table-wrap"><table id="joint"></table></div>
 
     <h2>4. Expected frequencies under independence</h2>
-    <p>If X and F were independent, the expected number of observations in cell (i, j) would be:</p>
+    <p>If X and F were independent, the expected count in each cell would be:</p>
     <div class="formula">E<sub>ij</sub> = (row total<sub>i</sub> × column total<sub>j</sub>) / n</div>
     <div class="table-wrap"><table id="expected"></table></div>
-    <p>For example, the expected number of stable Wi-Fi connections is (20 × 24) / 40 = 12, compared with 8 observed.</p>
+    <p id="expected-example"></p>
 
     <h2>5. Chi-square test</h2>
-    <p>We compare observed counts (O) with expected counts (E) using Pearson's chi-square statistic:</p>
+    <p>The chi-square statistic compares the observed counts O with the expected counts E:</p>
     <div class="formula">χ² = Σ (O<sub>ij</sub> − E<sub>ij</sub>)² / E<sub>ij</sub></div>
-    <p>Each cell contributes to the final value as follows:</p>
+    <p>Contributions of each cell to the chi-square statistic:</p>
     <div class="table-wrap"><table id="contributions"></table></div>
     <div class="result">
       <p id="test-result"></p>
+      <p>H₀: X and F are independent. H₁: X and F are associated. Significance level: α = 0.05.</p>
       <p id="test-decision"></p>
     </div>
-    <p class="muted">All expected counts are at least 5, so the usual expected-count condition for the chi-square approximation is satisfied.</p>
+    <p class="muted" id="assumption"></p>
 
     <h2>6. Conclusion</h2>
     <p id="conclusion"></p>
-    <p>The interruption rate is different between Wi-Fi and Ethernet in this sample. However, a statistical association does not prove causation. Signal quality, equipment and other factors could influence connection stability. Since this dataset is simulated, the conclusion only illustrates the statistical method; it is not a claim about real connections.</p>
-
+    <p>Statistical association does not prove causation. Different penguin species were observed on different islands, but this test cannot tell us why they are distributed that way. Habitat, sampling and other factors may be involved.</p>
+    <p class="muted">Source: Horst, Hill and Gorman (2020), <a href="https://allisonhorst.github.io/palmerpenguins/articles/intro.html" target="_blank" rel="noopener noreferrer">palmerpenguins</a>. The bundled CSV contains only the species and island pairs, reconstructed from the published frequency counts. No observations have been invented; the original row order is not retained.</p>
     <footer>Simone Paris · 2346573</footer>
   </main>
 
+  <!-- 344 (X,F) pairs, reconstructed from the published species-by-island counts. -->
+  <script id="dataset" type="text/plain">X,F
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Biscoe
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Dream
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Adelie,Torgersen
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Chinstrap,Dream
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe
+Gentoo,Biscoe</script>
   <script>
-    // Dataset: each entry is one (X, F) observation.
-    const data = [
-      ["Wi-Fi", "Stable"], ["Wi-Fi", "Interrupted"], ["Ethernet", "Stable"],
-      ["Wi-Fi", "Interrupted"], ["Wi-Fi", "Interrupted"], ["Wi-Fi", "Interrupted"],
-      ["Ethernet", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
-      ["Wi-Fi", "Interrupted"], ["Ethernet", "Interrupted"], ["Wi-Fi", "Stable"],
-      ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"], ["Ethernet", "Interrupted"],
-      ["Wi-Fi", "Interrupted"], ["Ethernet", "Stable"], ["Ethernet", "Stable"],
-      ["Ethernet", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
-      ["Ethernet", "Stable"], ["Wi-Fi", "Stable"], ["Ethernet", "Stable"],
-      ["Ethernet", "Interrupted"], ["Wi-Fi", "Interrupted"], ["Wi-Fi", "Stable"],
-      ["Wi-Fi", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
-      ["Ethernet", "Stable"], ["Ethernet", "Interrupted"], ["Ethernet", "Stable"],
-      ["Wi-Fi", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Stable"],
-      ["Wi-Fi", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
-      ["Ethernet", "Stable"]
-    ];
-
-    const xValues = [...new Set(data.map(item => item[0]))];
-    const fValues = [...new Set(data.map(item => item[1]))];
-    const n = data.length;
-
-    // Count how many observations belong to each pair.
-    const observed = xValues.map(x =>
-      fValues.map(f => data.filter(item => item[0] === x && item[1] === f).length)
-    );
-    const rowTotals = observed.map(row => row.reduce((a, b) => a + b, 0));
-    const colTotals = fValues.map((_, j) => observed.reduce((sum, row) => sum + row[j], 0));
-
-    const expected = observed.map((row, i) =>
-      row.map((_, j) => rowTotals[i] * colTotals[j] / n)
-    );
-    const contributions = observed.map((row, i) =>
-      row.map((value, j) => (value - expected[i][j]) ** 2 / expected[i][j])
-    );
-    const chiSquare = contributions.flat().reduce((a, b) => a + b, 0);
-    const df = (xValues.length - 1) * (fValues.length - 1);
+    const originalData = document.getElementById("dataset").textContent.trim()
+      .split("\n").slice(1).map(line => line.trim().split(","));
+    const xValues = ["Adelie", "Chinstrap", "Gentoo"];
+    const fValues = ["Biscoe", "Dream", "Torgersen"];
+    let currentData = [...originalData];
     const percent = value => (value * 100).toFixed(1) + "%";
 
-    // For a chi-square distribution with 1 df: p = erfc(sqrt(chiSquare / 2)).
-    // This is a standard numerical approximation of the error function.
-    function erf(x) {
-      const t = 1 / (1 + 0.3275911 * x);
-      return 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t
-        - 0.284496736) * t + 0.254829592) * t) * Math.exp(-x * x);
+    // Shuffle the full list, then take the requested number of real observations.
+    function shuffleSample() {
+      const shuffled = [...originalData];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+      currentData = shuffled.slice(0, Number(document.getElementById("sample-size").value));
+      updatePage();
     }
-    const pValue = df === 1 ? 1 - erf(Math.sqrt(chiSquare / 2)) : null;
 
-    // Add the table headers and rows to the page.
     function showTable(id, headings, rows) {
       const table = document.getElementById(id);
+      table.replaceChildren();
       const head = table.createTHead().insertRow();
-      headings.forEach(text => {
+      headings.forEach(value => {
         const th = document.createElement("th");
-        th.textContent = text;
+        th.textContent = value;
         head.appendChild(th);
       });
       const body = table.createTBody();
       rows.forEach(values => {
         const tr = body.insertRow();
-        values.forEach(value => { tr.insertCell().textContent = value; });
+        values.forEach(value => tr.insertCell().textContent = value);
       });
     }
 
-    document.getElementById("raw-data").textContent =
-      "X,F\n" + data.map(item => item.join(",")).join("\n");
+    function updatePage() {
+      const n = currentData.length;
+      const observed = xValues.map(x =>
+        fValues.map(f => currentData.filter(item => item[0] === x && item[1] === f).length)
+      );
+      const rowTotals = observed.map(row => row.reduce((a, b) => a + b, 0));
+      const colTotals = fValues.map((_, j) => observed.reduce((s, row) => s + row[j], 0));
+      const expected = observed.map((row, i) =>
+        row.map((_, j) => rowTotals[i] * colTotals[j] / n)
+      );
+      const contributions = observed.map((row, i) =>
+        row.map((value, j) => (value - expected[i][j]) ** 2 / expected[i][j])
+      );
+      const chiSquare = contributions.flat().reduce((a, b) => a + b, 0);
+      const df = (xValues.length - 1) * (fValues.length - 1);
+      // For df=4, the chi-square upper-tail probability is exp(-x/2) * (1 + x/2).
+      const pValue = Math.exp(-chiSquare / 2) * (1 + chiSquare / 2);
+      const minExpected = Math.min(...expected.flat());
 
-    showTable("observed", ["X / F", ...fValues, "Total"], [
-      ...xValues.map((x, i) => [x, ...observed[i], rowTotals[i]]),
-      ["Total", ...colTotals, n]
-    ]);
-    showTable("marginal-x", ["X", "Count", "Relative frequency"],
-      xValues.map((x, i) => [x, rowTotals[i], percent(rowTotals[i] / n)]));
-    showTable("marginal-f", ["F", "Count", "Relative frequency"],
-      fValues.map((f, j) => [f, colTotals[j], percent(colTotals[j] / n)]));
-    showTable("given-x", ["X / F", ...fValues],
-      xValues.map((x, i) => [x, ...fValues.map((_, j) => percent(observed[i][j] / rowTotals[i]))]));
-    showTable("given-f", ["F / X", ...xValues],
-      fValues.map((f, j) => [f, ...xValues.map((_, i) => percent(observed[i][j] / colTotals[j]))]));
-    showTable("joint", ["X / F", ...fValues, "Total"], [
-      ...xValues.map((x, i) => [x, ...observed[i].map(v => (v / n).toFixed(3)), (rowTotals[i] / n).toFixed(3)]),
-      ["Total", ...colTotals.map(v => (v / n).toFixed(3)), "1.000"]
-    ]);
-    showTable("expected", ["X / F", ...fValues],
-      xValues.map((x, i) => [x, ...expected[i].map(v => v.toFixed(2))]));
-    showTable("contributions", ["X / F", ...fValues],
-      xValues.map((x, i) => [x, ...contributions[i].map(v => v.toFixed(3))]));
+      document.getElementById("sample-info").textContent =
+        `Currently analyzing ${n} of ${originalData.length} observations${n === originalData.length ? " (full dataset)." : " (random sample)."}`;
+      document.getElementById("raw-data").textContent =
+        "X,F\n" + currentData.map(row => row.join(",")).join("\n");
 
-    const wifi = xValues.indexOf("Wi-Fi");
-    const stable = fValues.indexOf("Stable");
-    const ethernet = xValues.indexOf("Ethernet");
-    document.getElementById("conditional-example").textContent =
-      `For example, ${percent(observed[wifi][stable] / rowTotals[wifi])} of Wi-Fi observations are stable, compared with ${percent(observed[ethernet][stable] / rowTotals[ethernet])} of Ethernet observations.`;
+      showTable("observed", ["X / F", ...fValues, "Total"], [
+        ...xValues.map((x, i) => [x, ...observed[i], rowTotals[i]]),
+        ["Total", ...colTotals, n]
+      ]);
+      showTable("marginal-x", ["X", "Count", "Relative frequency"],
+        xValues.map((x, i) => [x, rowTotals[i], percent(rowTotals[i] / n)]));
+      showTable("marginal-f", ["F", "Count", "Relative frequency"],
+        fValues.map((f, j) => [f, colTotals[j], percent(colTotals[j] / n)]));
+      showTable("given-x", ["X / F", ...fValues],
+        xValues.map((x, i) => [x, ...fValues.map((_, j) =>
+          rowTotals[i] ? percent(observed[i][j] / rowTotals[i]) : "—")]));
+      showTable("given-f", ["X / F", ...fValues],
+        xValues.map((x, i) => [x, ...fValues.map((_, j) =>
+          colTotals[j] ? percent(observed[i][j] / colTotals[j]) : "—")]));
+      showTable("joint", ["X / F", ...fValues, "Total"], [
+        ...xValues.map((x, i) => [x, ...observed[i].map(v => (v / n).toFixed(3)), (rowTotals[i] / n).toFixed(3)]),
+        ["Total", ...colTotals.map(v => (v / n).toFixed(3)), "1.000"]
+      ]);
+      showTable("expected", ["X / F", ...fValues],
+        xValues.map((x, i) => [x, ...expected[i].map(v => v.toFixed(2))]));
+      showTable("contributions", ["X / F", ...fValues],
+        xValues.map((x, i) => [x, ...contributions[i].map(v => v.toFixed(3))]));
 
-    document.getElementById("test-result").textContent =
-      `χ² = ${chiSquare.toFixed(3)}   |   df = ${df}   |   p-value ≈ ${pValue.toFixed(4)}`;
-    const reject = pValue < 0.05;
-    document.getElementById("test-decision").textContent =
-      `H₀: X and F are independent. H₁: X and F are associated. Significance level: α = 0.05.`;
-    document.getElementById("conclusion").textContent = reject
-      ? `Since p ≈ ${pValue.toFixed(4)} is below 0.05 (equivalently, χ² = ${chiSquare.toFixed(3)} exceeds the critical value 3.841), we reject H₀. The data provide evidence of a statistical association between connection type and status.`
-      : `Since p ≈ ${pValue.toFixed(4)} is not below 0.05, we do not reject H₀. The data are compatible with independence, but this does not prove independence.`;
+      document.getElementById("conditional-example").textContent =
+        `For example, ${observed[0][0]} of the ${rowTotals[0]} Adelie penguins were observed on Biscoe: ` +
+        `${percent(observed[0][0] / rowTotals[0])}.`;
+      document.getElementById("expected-example").textContent =
+        `For example, the expected number of Adelie penguins on Biscoe is ` +
+        `(${rowTotals[0]} × ${colTotals[0]}) / ${n} = ${expected[0][0].toFixed(2)}, ` +
+        `compared with ${observed[0][0]} observed.`;
+      document.getElementById("test-result").textContent =
+        `χ² = ${chiSquare.toFixed(3)} | df = ${df} | p-value ≈ ${pValue.toExponential(2)}`;
+      document.getElementById("test-decision").textContent = pValue < 0.05
+        ? "Since p < 0.05, we reject H₀. The sample provides evidence of an association."
+        : "Since p ≥ 0.05, we do not reject H₀. The data do not provide sufficient evidence of an association.";
+      document.getElementById("assumption").textContent = minExpected >= 5
+        ? `The smallest expected count is ${minExpected.toFixed(2)}, so all expected counts are at least 5.`
+        : `The smallest expected count is ${minExpected.toFixed(2)}. Some expected counts are below 5, so the chi-square approximation may be less reliable.`;
+      document.getElementById("conclusion").textContent = pValue < 0.05
+        ? "Species and island are statistically associated in this sample. The frequency distribution of islands differs across species."
+        : "The test did not find enough evidence to reject independence in this sample. This is not proof that the variables are independent.";
+    }
+
+    document.getElementById("shuffle").addEventListener("click", shuffleSample);
+    document.getElementById("reset").addEventListener("click", () => {
+      currentData = [...originalData];
+      document.getElementById("sample-size").value = "344";
+      updatePage();
+    });
+    document.getElementById("sample-size").addEventListener("change", shuffleSample);
+    document.getElementById("sample-size").value = "344";
+    updatePage();
   </script>
 </body>
 </html>
