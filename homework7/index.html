@@ -1,1 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d17">
+  <title>Homework 7 | Statistical Independence</title>
+  <style>
+    :root { --bg: #080d17; --panel: #111c2b; --ink: #edf6ff; --muted: #a1b1c4; --line: #29394d; --accent: #7ce9c9; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.65; }
+    main { width: min(850px, calc(100% - 40px)); margin: 0 auto; padding: 56px 0 90px; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .back { font-size: .9rem; }
+    .eyebrow { margin: 45px 0 6px; color: var(--accent); font-size: .8rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { margin: 0 0 13px; font-size: clamp(2rem, 6vw, 3.2rem); line-height: 1.15; letter-spacing: -.045em; }
+    h2 { margin: 42px 0 10px; font-size: 1.28rem; letter-spacing: -.02em; }
+    h3 { margin: 24px 0 9px; font-size: 1rem; }
+    p { margin: 10px 0; color: #d1ddeb; }
+    .muted { color: var(--muted); }
+    .tables { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+    .table-wrap { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); border-radius: 10px; }
+    table { border-collapse: collapse; width: 100%; font-size: .92rem; text-align: left; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    th { background: var(--panel); color: var(--accent); font-weight: 600; }
+    td { color: var(--ink); }
+    tr:last-child td { border-bottom: 0; }
+    .formula { margin: 14px 0; padding: 12px 16px; border-left: 3px solid var(--accent); color: var(--ink); background: var(--panel); }
+    details { margin: 18px 0; border: 1px solid var(--line); border-radius: 10px; }
+    summary { padding: 12px 16px; cursor: pointer; color: var(--accent); }
+    pre { margin: 0; padding: 0 16px 16px; color: #d1ddeb; font-size: .85rem; line-height: 1.55; overflow: auto; max-height: 240px; }
+    .result { margin-top: 20px; padding: 17px 20px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+    .result p { margin: 4px 0; }
+    footer { margin-top: 65px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; }
+    @media (max-width: 620px) { main { padding-top: 32px; } .tables { grid-template-columns: 1fr; gap: 0; } th,td { padding: 10px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <a class="back" href="../">← Back to home</a>
+    <p class="eyebrow">Statistics · Homework 7</p>
+    <h1>Statistical Independence</h1>
+    <p class="muted">A simple example using two categorical variables and Pearson's chi-square test.</p>
+
+    <h2>1. What does independence mean?</h2>
+    <p>In probability, two variables X and F are independent if the joint probability is the product of the marginal probabilities for every pair of values:</p>
+    <div class="formula">P(X = x, F = f) = P(X = x) · P(F = f)</div>
+    <p>This is equivalent to P(F = f | X = x) = P(F = f), whenever P(X = x) &gt; 0. Knowing X does not change the distribution of F.</p>
+    <p>In statistics, we estimate these probabilities from data. Even if two variables are independent in the population, the sample frequencies will not usually match exactly. The chi-square test checks whether the observed differences are large enough to question independence.</p>
+
+    <h2>2. Dataset and contingency table</h2>
+    <p>I used 40 simulated connection checks. X is the connection type (Wi-Fi or Ethernet), while F is the result (Stable or Interrupted). These are example observations, not measurements from a real network.</p>
+    <p>The contingency table is built by counting how often each pair (X, F) occurs.</p>
+    <details>
+      <summary>Show the 40 observations (X, F)</summary>
+      <pre id="raw-data"></pre>
+    </details>
+    <div class="table-wrap"><table id="observed"></table></div>
+
+    <h2>3. Marginal and conditional frequencies</h2>
+    <p>Marginal relative frequencies are calculated by dividing row or column totals by the total number of observations, n = 40.</p>
+    <div class="tables">
+      <div><h3>Marginal frequencies of X</h3><div class="table-wrap"><table id="marginal-x"></table></div></div>
+      <div><h3>Marginal frequencies of F</h3><div class="table-wrap"><table id="marginal-f"></table></div></div>
+    </div>
+    <p>Conditional frequencies describe the distribution of one variable when the value of the other is known.</p>
+    <div class="tables">
+      <div><h3>F given X (row percentages)</h3><div class="table-wrap"><table id="given-x"></table></div></div>
+      <div><h3>X given F (column percentages)</h3><div class="table-wrap"><table id="given-f"></table></div></div>
+    </div>
+    <p id="conditional-example"></p>
+    <h3>Joint relative frequencies</h3>
+    <p>Each entry is the count divided by n, with the marginal frequencies in the last row and column.</p>
+    <div class="table-wrap"><table id="joint"></table></div>
+
+    <h2>4. Expected frequencies under independence</h2>
+    <p>If X and F were independent, the expected number of observations in cell (i, j) would be:</p>
+    <div class="formula">E<sub>ij</sub> = (row total<sub>i</sub> × column total<sub>j</sub>) / n</div>
+    <div class="table-wrap"><table id="expected"></table></div>
+    <p>For example, the expected number of stable Wi-Fi connections is (20 × 24) / 40 = 12, compared with 8 observed.</p>
+
+    <h2>5. Chi-square test</h2>
+    <p>We compare observed counts (O) with expected counts (E) using Pearson's chi-square statistic:</p>
+    <div class="formula">χ² = Σ (O<sub>ij</sub> − E<sub>ij</sub>)² / E<sub>ij</sub></div>
+    <p>Each cell contributes to the final value as follows:</p>
+    <div class="table-wrap"><table id="contributions"></table></div>
+    <div class="result">
+      <p id="test-result"></p>
+      <p id="test-decision"></p>
+    </div>
+    <p class="muted">All expected counts are at least 5, so the usual expected-count condition for the chi-square approximation is satisfied.</p>
+
+    <h2>6. Conclusion</h2>
+    <p id="conclusion"></p>
+    <p>The interruption rate is different between Wi-Fi and Ethernet in this sample. However, a statistical association does not prove causation. Signal quality, equipment and other factors could influence connection stability. Since this dataset is simulated, the conclusion only illustrates the statistical method; it is not a claim about real connections.</p>
+
+    <footer>Simone Paris · 2346573</footer>
+  </main>
+
+  <script>
+    // Dataset: each entry is one (X, F) observation.
+    const data = [
+      ["Wi-Fi", "Stable"], ["Wi-Fi", "Interrupted"], ["Ethernet", "Stable"],
+      ["Wi-Fi", "Interrupted"], ["Wi-Fi", "Interrupted"], ["Wi-Fi", "Interrupted"],
+      ["Ethernet", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
+      ["Wi-Fi", "Interrupted"], ["Ethernet", "Interrupted"], ["Wi-Fi", "Stable"],
+      ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"], ["Ethernet", "Interrupted"],
+      ["Wi-Fi", "Interrupted"], ["Ethernet", "Stable"], ["Ethernet", "Stable"],
+      ["Ethernet", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
+      ["Ethernet", "Stable"], ["Wi-Fi", "Stable"], ["Ethernet", "Stable"],
+      ["Ethernet", "Interrupted"], ["Wi-Fi", "Interrupted"], ["Wi-Fi", "Stable"],
+      ["Wi-Fi", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
+      ["Ethernet", "Stable"], ["Ethernet", "Interrupted"], ["Ethernet", "Stable"],
+      ["Wi-Fi", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Stable"],
+      ["Wi-Fi", "Stable"], ["Ethernet", "Stable"], ["Wi-Fi", "Interrupted"],
+      ["Ethernet", "Stable"]
+    ];
+
+    const xValues = [...new Set(data.map(item => item[0]))];
+    const fValues = [...new Set(data.map(item => item[1]))];
+    const n = data.length;
+
+    // Count how many observations belong to each pair.
+    const observed = xValues.map(x =>
+      fValues.map(f => data.filter(item => item[0] === x && item[1] === f).length)
+    );
+    const rowTotals = observed.map(row => row.reduce((a, b) => a + b, 0));
+    const colTotals = fValues.map((_, j) => observed.reduce((sum, row) => sum + row[j], 0));
+
+    const expected = observed.map((row, i) =>
+      row.map((_, j) => rowTotals[i] * colTotals[j] / n)
+    );
+    const contributions = observed.map((row, i) =>
+      row.map((value, j) => (value - expected[i][j]) ** 2 / expected[i][j])
+    );
+    const chiSquare = contributions.flat().reduce((a, b) => a + b, 0);
+    const df = (xValues.length - 1) * (fValues.length - 1);
+    const percent = value => (value * 100).toFixed(1) + "%";
+
+    // For a chi-square distribution with 1 df: p = erfc(sqrt(chiSquare / 2)).
+    // This is a standard numerical approximation of the error function.
+    function erf(x) {
+      const t = 1 / (1 + 0.3275911 * x);
+      return 1 - (((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t
+        - 0.284496736) * t + 0.254829592) * t) * Math.exp(-x * x);
+    }
+    const pValue = df === 1 ? 1 - erf(Math.sqrt(chiSquare / 2)) : null;
+
+    // Add the table headers and rows to the page.
+    function showTable(id, headings, rows) {
+      const table = document.getElementById(id);
+      const head = table.createTHead().insertRow();
+      headings.forEach(text => {
+        const th = document.createElement("th");
+        th.textContent = text;
+        head.appendChild(th);
+      });
+      const body = table.createTBody();
+      rows.forEach(values => {
+        const tr = body.insertRow();
+        values.forEach(value => { tr.insertCell().textContent = value; });
+      });
+    }
+
+    document.getElementById("raw-data").textContent =
+      "X,F\n" + data.map(item => item.join(",")).join("\n");
+
+    showTable("observed", ["X / F", ...fValues, "Total"], [
+      ...xValues.map((x, i) => [x, ...observed[i], rowTotals[i]]),
+      ["Total", ...colTotals, n]
+    ]);
+    showTable("marginal-x", ["X", "Count", "Relative frequency"],
+      xValues.map((x, i) => [x, rowTotals[i], percent(rowTotals[i] / n)]));
+    showTable("marginal-f", ["F", "Count", "Relative frequency"],
+      fValues.map((f, j) => [f, colTotals[j], percent(colTotals[j] / n)]));
+    showTable("given-x", ["X / F", ...fValues],
+      xValues.map((x, i) => [x, ...fValues.map((_, j) => percent(observed[i][j] / rowTotals[i]))]));
+    showTable("given-f", ["F / X", ...xValues],
+      fValues.map((f, j) => [f, ...xValues.map((_, i) => percent(observed[i][j] / colTotals[j]))]));
+    showTable("joint", ["X / F", ...fValues, "Total"], [
+      ...xValues.map((x, i) => [x, ...observed[i].map(v => (v / n).toFixed(3)), (rowTotals[i] / n).toFixed(3)]),
+      ["Total", ...colTotals.map(v => (v / n).toFixed(3)), "1.000"]
+    ]);
+    showTable("expected", ["X / F", ...fValues],
+      xValues.map((x, i) => [x, ...expected[i].map(v => v.toFixed(2))]));
+    showTable("contributions", ["X / F", ...fValues],
+      xValues.map((x, i) => [x, ...contributions[i].map(v => v.toFixed(3))]));
+
+    const wifi = xValues.indexOf("Wi-Fi");
+    const stable = fValues.indexOf("Stable");
+    const ethernet = xValues.indexOf("Ethernet");
+    document.getElementById("conditional-example").textContent =
+      `For example, ${percent(observed[wifi][stable] / rowTotals[wifi])} of Wi-Fi observations are stable, compared with ${percent(observed[ethernet][stable] / rowTotals[ethernet])} of Ethernet observations.`;
+
+    document.getElementById("test-result").textContent =
+      `χ² = ${chiSquare.toFixed(3)}   |   df = ${df}   |   p-value ≈ ${pValue.toFixed(4)}`;
+    const reject = pValue < 0.05;
+    document.getElementById("test-decision").textContent =
+      `H₀: X and F are independent. H₁: X and F are associated. Significance level: α = 0.05.`;
+    document.getElementById("conclusion").textContent = reject
+      ? `Since p ≈ ${pValue.toFixed(4)} is below 0.05 (equivalently, χ² = ${chiSquare.toFixed(3)} exceeds the critical value 3.841), we reject H₀. The data provide evidence of a statistical association between connection type and status.`
+      : `Since p ≈ ${pValue.toFixed(4)} is not below 0.05, we do not reject H₀. The data are compatible with independence, but this does not prove independence.`;
+  </script>
+</body>
+</html>
 
